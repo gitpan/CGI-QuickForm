@@ -14,9 +14,10 @@ use CGI qw( :standard :html3 ) ;
 use CGI::QuickForm ;
 
 show_form(
-    -TITLE  => 'Test Form',
-    -ACCEPT => \&on_valid_form, 
-    -FIELDS => [
+    -TITLE         => 'Test Form',
+    -ACCEPT        => \&on_valid_form, 
+    -TABLE_OPTIONS => 'BGCOLOR="#EEEEEE"',
+    -FIELDS        => [
         {
             -LABEL    => 'Forename',
         },

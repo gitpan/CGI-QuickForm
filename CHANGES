@@ -1,7 +1,23 @@
+1999/12/01
+
+Form-level error messages are now displayed before the required/invalid fields
+messages.
+
+Added -BORDER form-level option. The default is zero (no border), but can now
+be set, e.g. to 1. This is useful if you use the new -DESC field-level option
+which allows you to place some short descriptive text above each field. (Got
+the idea from an article on the BYTE web site.)
+
+Added -TABLE_OPTIONS so that you can change the style of the table. 
+Added -STYLE_ROW, -STYLE_DESC and -STYLE_WHY so that you can change the style
+of the rows, descriptions and error messages. 
+(See example5).
+
+
 1999/11/30
 
-Please don't use version 1.56 - introduced some bugs in that one.
-This has the corrections (1.54 and earlier are fine, 1.57 is fine).
+Fixed some bugs introduced in 1.56 (please use earlier or later versions
+instead). 1.57 is now the current version and is recommended.
 
 
 1999/11/24
@@ -121,5 +137,4 @@ Version 1.00.
 1999/08/24  
 
 Created. Thanks to Paul Johnston for the idea. 
-
 

@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id: linux-help,v 1.17 1999/11/15 20:20:43 root Exp root $
+# $Id: linux-help,v 1.18 1999/11/28 15:44:15 root Exp $
 
 # Copyright (c) Mark Summerfield 1999. All Rights Reserved.
 # May be used/distributed under the GPL.
@@ -23,7 +23,6 @@
 # TODO Cache page searches, i.e. cache lists of links?
 # TODO Keyword searching
 
-
 use strict ;
 
 use CGI qw( :standard :html3 ) ;
@@ -38,7 +37,6 @@ use URI::Escape ;
 use vars qw( $VERSION ) ; $VERSION = '1.02' ;
 
 use vars qw( $URL $PREDEFINED_PAGES ) ;
-
 
 ################### CHANGE THESE FOR YOUR LOCAL SYSTEM ##############
 
@@ -57,7 +55,6 @@ my $PATH_POD  = "/usr/doc/perl5:/usr/doc:/usr/lib/perl5:/root/lib" ;
 my $TMP       = '/tmp' ;
 
 ################### END OF LOCAL CHANGES ############################
-
 
 $| = 1 ; # Autoflush.
 
@@ -79,7 +76,6 @@ my $PREFIX       = "\x01" ;
 my $SEARCH_TERMS = "$PREFIX SEARCH_TERMS" ;
 my $SHOWN        = "$PREFIX SHOWN" ;
 
-
 my %Data ;
 my %Show ;
 my %SearchTerm ; # key is the term, value is the number of times used
@@ -87,9 +83,7 @@ my @Term ;       # Array of terms to be matched
 my $CaseSensitive = '(?i)' ;
 my %Found ;
 
-
 &initialise ;
-
 
 if( query_string() =~ /file=([^&]+)/o ) {
     &show_file( $1 ) ;
@@ -169,8 +163,6 @@ else {
 }
 
 &clean_and_quit ;
-
-
 
 sub show_file {
     my $file = uri_unescape( shift ) ;
@@ -295,7 +287,6 @@ sub show_file {
     }
 }
 
-
 # Copied from Programming Perl 2nd Ed (Blue Camel).
 sub full_system {
 
@@ -323,7 +314,6 @@ sub full_system {
 #    print qq{<FONT COLOR="RED">$result</FONT>} if $result ;
     ( $rc != 0 ) ;
 }
-
 
 sub on_valid_form {
 
@@ -390,7 +380,6 @@ sub on_valid_form {
     }
 }
 
-
 sub show_del {
     my( $type, $value ) = @_ ;
 
@@ -405,7 +394,6 @@ sub show_del {
 
     print end_html ;
 }
-
 
 sub show_matches {
     my $term = shift ;
@@ -455,7 +443,6 @@ sub show_matches {
     print end_html ;
 }
 
-
 sub wanted {
     if( -f ) {
         foreach my $term ( @Term ) {
@@ -464,14 +451,12 @@ sub wanted {
     }
 }
 
-
 sub by_filename {
     my $filea = lc &file_to_name( $a ) ;
     my $fileb = lc &file_to_name( $b ) ;
 
     $filea cmp $fileb ;
 }
-
 
 sub file_to_name {
     my $name = shift ;
@@ -490,7 +475,6 @@ sub file_to_name {
     $name ;
 }
 
-
 # No need now that the user can manually delete - but will do for convenience.
 sub reduce_terms {
 
@@ -504,7 +488,6 @@ sub reduce_terms {
     }
 }
 
-
 sub new_search {
 
     print 
@@ -513,7 +496,6 @@ sub new_search {
         end_form,
         ;
 }
-
 
 sub fail_form {
 
@@ -533,7 +515,6 @@ sub fail_form {
     &clean_and_quit ;
 }
 
-
 sub clean_and_quit {
 
     eval {
@@ -544,7 +525,6 @@ sub clean_and_quit {
 
     exit ;
 }
-
 
 sub initialise {
 
@@ -581,7 +561,6 @@ sub initialise {
     %Show = %{ thaw( $Data{$SHOWN} ) } if exists $Data{$SHOWN} ;
 }
 
-
 sub show_config {
 
     local $_ = <<__EOT__ ;
@@ -612,7 +591,6 @@ __EOT__
 
     $_ .= "</TABLE>" ;
 }
-
 
 BEGIN {
 
@@ -662,9 +640,7 @@ __EOT__
 
 }
 
-
 __END__
-
 
 =head1 NAME
 
@@ -712,7 +688,7 @@ C<URI::Escape>
 
 Copyright (c) Mark Summerfield 1999. All Rights Reserved.
 May be used/distributed under the GPL.
-Email <summer@chest.ac.uk> with 'linux-help' in the subject line.
+Email <summer@perlpress.com> with 'linux-help' in the subject line.
 
 =head1 OSNAMES
 
@@ -724,5 +700,4 @@ CGI
 Web
 
 =cut
-
 

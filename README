@@ -41,6 +41,7 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
 
     show_form(
         -ACCEPT           => \&on_valid_form, 
+        -BORDER           => 0,
         -FOOTER           => undef,
         -HEADER           => undef,      
         -LANGUAGE         => 'en',
@@ -54,6 +55,9 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
         -STYLE_FIELDNAME  => '',
         -STYLE_FIELDVALUE => '',
         -STYLE_BUTTONS    => '',
+        -STYLE_ROW        => '',
+        -STYLE_WHY        => '',
+        -TABLE_OPTIONS    => '',
         -FIELDS           => [            
             { 
                 -LABEL     => 'Name', 
@@ -61,60 +65,41 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
                 -TYPE      => 'textfield',
                 -VALIDATE  => undef, # Set this to validate the field
                 -CLEAN     => undef, # Set this to clean up valid data
+                -DESC      => undef,
                 # Lowercase options are those supplied by CGI.pm
                 -name      => undef, # Defaults to -LABEL's value.
                 -default   => undef,
                 -size      => 30,
                 -maxlength => undef,
             },
+            # For all others: same QuickForm options as above
+            # and all CGI.pm options (which vary with -TYPE) available 
             { 
                 -LABEL     => 'Address', 
-                -REQUIRED  => undef,
                 -TYPE      => 'textarea',
-                -VALIDATE  => undef,
-                -CLEAN     => undef,
-                -name      => undef,
-                -default   => undef,
                 -rows      => 3,
                 -columns   => 40,
             },
             { 
                 -LABEL     => 'Password', 
-                -REQUIRED  => undef,
                 -TYPE      => 'password_field',
-                -VALIDATE  => undef,
-                -CLEAN     => undef,
-                -name      => undef,
-                -value     => undef,
-                -size      => 10,
-                -maxlength => undef,
             },
             { 
                 -LABEL     => 'Hair colour', 
-                -REQUIRED  => undef,
                 -TYPE      => 'scrolling_list',
-                -VALIDATE  => undef,
-                -CLEAN     => undef,
-                -name      => undef,
-                -values    => [ qw( Red Black Brown Grey White ) ],
+                '-values'  => [ qw( Red Black Brown Grey White ) ],
                 -size      => 1,
                 -multiples => undef,
             },
             { 
                 -LABEL     => 'Worst Sport', 
-                -REQUIRED  => undef,
                 -TYPE      => 'radio_group',
-                -VALIDATE  => undef,
-                -CLEAN     => undef, 
-                -name      => undef,
                 -values    => [ qw( Boxing Cricket Golf ) ], 
                 -default   => 'Golf',
-                -size      => undef,
-                -multiples => undef,
             },
             # Any other CGI.pm field can be used in the same way.
         ],
-        -BUTTONS          => [
+        -BUTTONS           => [
             { -name => 'Add'    },
             { -name => 'Edit'   },
             { -name => 'List'   },
@@ -158,6 +143,10 @@ something like this:
         # Process, e.g. send an email or write a record to a file or database.
         # Give the user a thank you.
     }
+
+C<-BORDER> Optional integer. This is the border width. Default is zero. You
+would normally set this to 1 if you are using C<-DESC> to add textual
+descriptions to your fields.
 
 C<-BUTTONS> Optional array reference. This is an array of submit buttons. The
 buttons appear at the bottom of the form, after all the fields. Each button is
@@ -393,6 +382,12 @@ typical routine might clean up excess whitespace, e.g.:
         $_ ;
     }
 
+C<-DESC> Optional string. This is a short piece of descriptive text which
+appears above the field and is used to give the user a little guidance on what
+they should choose or enter. Normally if you use these then you would set the
+form-level C<-BORDER> option to 1 to help visually group the field and its
+descriptive text.
+
 C<-LABEL> Required string. This is the display label for the field. It is
 also used as the field's name if no C<-name> option is used.
 
@@ -456,8 +451,17 @@ class or style using the -STYLE_* options, e.g.
     -STYLE_FIELDNAME  => qq{style="font-size:12pt;margin:2em;"},
     -STYLE_FIELDVALUE => qq{class="mystyle.css"},
     -STYLE_BUTTONS    => qq{style="font-family:Helvetica;text-align:center;"},
+    -STYLE_ROW        => qq{style="mystyle.css"},
+    -STYLE_WHY        => qq{style="font-style:italic;color:red"},
+    -STYLE_DESC       => qq{style="color:darkblue"},
 
-See example3 (linux-help) for more examples.
+For tables you can set options (because most browsers don't seem to support
+styles in tables):
+
+    -TABLE_OPTIONS    => qq{BGCOLOR="WHITE"},
+
+
+See files, example3 (linux-help) and example5 (bicycle) for more examples.
 
 You can of course also apply your own global styles to the existing tags in
 the normal way.
@@ -590,14 +594,18 @@ production-quality program: it has no error checking and is I<not> secure.
         } ;
     }
 
+=head2 INTRODUCTORY ARTICLE
+
+See http://www.perlpress.com/perl/quickform.html or
+http://www.queenwood.fsnet.co.uk/perl/quickform.html
+
 =head1 BUGS
 
-None that have come to light (yet).
 Please don't use version 1.56, later or earlier versions are fine.
 
 =head1 AUTHOR
 
-Mark Summerfield. I can be contacted as <summer@chest.ac.uk> -
+Mark Summerfield. I can be contacted as <summer@perlpress.com> -
 please include the word 'quickform' in the subject line.
 
 See CHANGES for acknowledgements.

@@ -1,0 +1,80 @@
+#!/usr/bin/perl -Tw
+
+# Copyright (c) Mark Summerfield 1999. All Rights Reserved.
+# May be used/distributed under the GPL.
+
+# WARNING - this program is provided as an example of QuickForm use and not as
+# an example of production quality CGI code - it may not be secure. 
+
+use strict ;
+use CGI qw( :standard :html3 ) ;
+use CGI::QuickForm ;
+show_form(
+    -TITLE            => 'Bicycle Form',
+    -VALIDATE         => \&valid_form, # Form validation
+    -ACCEPT           => \&on_valid_form,
+    -BORDER           => 0,
+    -STYLE_FIELDNAME  => 'style="background-color:#AAAAAA"',
+    -STYLE_FIELDVALUE => 'style="background-color:#DDDDDD"',
+    -STYLE_WHY        => 'style="font-style:italic;color:red"',
+    -STYLE_DESC       => 'style="color:darkblue"',
+    -FIELDS           => [
+            { -LABEL => 'Forename' },
+            { -LABEL => 'Surname'  },
+            {
+                # No explicit validation - browser will ensure that one of
+                # these is selected
+                -LABEL    => 'Gears',  
+                -TYPE     => 'radio_group',
+                -DESC     => 'Choose which gear system you require',
+                '-values' => [ 'Sturmey-Archer', 'Derallieur' ],
+            },
+            { 
+                -LABEL    => 'Speeds',
+                -VALIDATE => \&valid_speeds, # Field validation
+                -DESC     => 'Pick the number of speeds required',
+                -default  => 5,
+            },
+        ],
+    ) ;
+    
+sub valid_speeds { 
+    my $field = shift ;
+
+    if( $field =~ /^(?:[3567]|1[02458]|21)$/o ) { 
+        ( 1, '' ) ; 
+    }
+    else {
+        ( 0, "May only choose 3,5,6,7,10,12,14,15,18 or 21 speeds" ) ; 
+    }
+}
+
+sub valid_form {
+    my %field = @_ ;
+    my $valid = 0 ; # Assume invalid.
+    my $why   = '' ;
+
+    if( $field{'Gears'} eq 'Sturmey-Archer' ) {
+        $valid = 1 if $field{'Speeds'} == 3 or $field{'Speeds'} == 5 ; 
+        $why   = "Sturmey-Archer gears only have 3 or 5 speeds" ; 
+    }
+    else {
+        $valid = $field{'Speeds'} =~ /^(?:[567]|1[02458]|21)$/o ;
+        $why   = "Derallieurs only have 5,6,7,10,12,14,15,18 or " .
+                 "21 speeds" ;
+    }
+
+    ( $valid, $why ) ;
+}
+
+sub on_valid_form {
+    my $forename = param( 'Forename' ) ;
+    my $gears    = param( 'Gears' ) ;
+    my $speeds   = param( 'Speeds' ) ;
+
+    print header, start_html( 'Bicycle Form' ), h3( 'Bicycle Form' ),
+          p( "Thank you $forename for your data, you chose $gears gears ",
+          "and $speeds speeds." ), 
+          end_html ;
+}
+

@@ -1,6 +1,6 @@
 package CGI::QuickForm ; # Documented at the __END__.
 
-# $Id: QuickForm.pm,v 1.23 1999/11/25 18:52:28 root Exp root $
+# $Id: QuickForm.pm,v 1.26 1999/12/01 20:51:10 root Exp root $
 
 require 5.004 ;
 
@@ -15,7 +15,7 @@ use vars qw(
             %Translate 
             ) ;
 
-$VERSION   = '1.57' ; 
+$VERSION   = '1.60' ; 
 
 use Exporter() ;
 
@@ -27,76 +27,80 @@ use Exporter() ;
 # &colour is not documented because at some point it may be moved elsewhere.
 @EXPORT_OK = qw( colour color ) ;
 *color = \&colour ;
-#sub colour { qq{<FONT COLOR="$_[0]">$_[1]</FONT>} }
 sub colour { qq{<SPAN style="color:$_[0]">$_[1]</SPAN>} }
 
 
-my %Record ;
+my %Form ;
 
 
 sub show_form {
-    %Record = (
+    %Form = (
         -LANGUAGE         => 'en',         # Language to use for default messages
         -TITLE            => 'Quick Form', # Default page title and heading
         -HEADER           => undef,      
         -FOOTER           => undef,
         -ACCEPT           => \&_on_valid_form,
-        -VALIDATE         => undef,        # Call this to validate entire record
+        -VALIDATE         => undef,        # Call this to validate entire form
         -SIZE             => undef,
         -MAXLENGTH        => undef,
         -ROWS             => undef,
         -COLUMNS          => undef,
+        -BORDER           => 0,
         -CHECK            => 1,
         -STYLE_FIELDNAME  => '',
         -STYLE_FIELDVALUE => '',
         -STYLE_BUTTONS    => '',
+        -STYLE_ROW        => '',
+        -STYLE_DESC       => '',
+        -STYLE_WHY        => '',
+        -TABLE_OPTIONS    => '',
         -FIELDS           => [ { -LABEL => 'No Fields Specified' } ],
         -BUTTONS          => [ { -name  => 'Submit' } ], # Default button
         @_,
         ) ;
 
     # Backward compatibility.
-    $Record{-LANGUAGE} = 'en' if $Record{-LANGUAGE} eq 'english' ;
-    $Record{-BUTTONS}[0]{-name} = $Record{-BUTTONLABEL} if $Record{-BUTTONLABEL} ;
+    $Form{-LANGUAGE} = 'en' if $Form{-LANGUAGE} eq 'english' ;
+    $Form{-BUTTONS}[0]{-name} = $Form{-BUTTONLABEL} if $Form{-BUTTONLABEL} ;
 
-    $Record{-REQUIRED} = 0 ; # Assume no fields are required.
+    $Form{-REQUIRED} = 0 ; # Assume no fields are required.
 
-    $Record{-STYLE_FIELDNAME}  = " $Record{-STYLE_FIELDNAME}" 
-    if $Record{-STYLE_FIELDNAME} ;
-    $Record{-STYLE_FIELDVALUE} = " $Record{-STYLE_FIELDVALUE}"
-    if $Record{-STYLE_FIELDVALUE} ;
-    $Record{-STYLE_BUTTONS}    = " $Record{-STYLE_BUTTONS}"
-    if $Record{-STYLE_BUTTONS} ;
+    foreach my $style ( qw( FIELDNAME FIELDVALUE BUTTONS DESC WHY ) ) {
+        $Form{"-STYLE_$style"}  = qq{ $Form{"-STYLE_$style"}} 
+        if $Form{"-STYLE_$style"} ;
+    }
+
+    $Form{-TABLE_OPTIONS} = " $Form{-TABLE_OPTIONS}" if $Form{-TABLE_OPTIONS} ;
 
     my $i = 0 ;
-    foreach my $fieldref ( @{$Record{-FIELDS}} ) {
+    foreach my $fieldref ( @{$Form{-FIELDS}} ) {
         my %field = %$fieldref ;
         # We have to write back to the original data, $fieldref only points to
         # a copy.
-        $Record{-FIELDS}[$i]{-LABEL} = $field{-name}  unless $field{-LABEL} ;
-        $Record{-FIELDS}[$i]{-name}  = $field{-LABEL} unless $field{-name} ;
-        $Record{-FIELDS}[$i]{-TYPE}  = 'textfield'    unless $field{-TYPE} ;
-        $Record{-REQUIRED}           = 1              if $field{-REQUIRED} ;
-        if( $Record{-FIELDS}[$i]{-TYPE} eq 'textfield' ) { 
-            if( $Record{-SIZE} and not $field{-size} ) {
-                $Record{-FIELDS}[$i]{-size}      = $Record{-SIZE} ;
+        $Form{-FIELDS}[$i]{-LABEL} = $field{-name}  unless $field{-LABEL} ;
+        $Form{-FIELDS}[$i]{-name}  = $field{-LABEL} unless $field{-name} ;
+        $Form{-FIELDS}[$i]{-TYPE}  = 'textfield'    unless $field{-TYPE} ;
+        $Form{-REQUIRED}           = 1              if $field{-REQUIRED} ;
+        if( $Form{-FIELDS}[$i]{-TYPE} eq 'textfield' ) { 
+            if( $Form{-SIZE} and not $field{-size} ) {
+                $Form{-FIELDS}[$i]{-size}      = $Form{-SIZE} ;
             }
-            if( $Record{-MAXLENGTH} and not $field{-maxlength} ) {
-                $Record{-FIELDS}[$i]{-maxlength} = $Record{-MAXLENGTH} ;
+            if( $Form{-MAXLENGTH} and not $field{-maxlength} ) {
+                $Form{-FIELDS}[$i]{-maxlength} = $Form{-MAXLENGTH} ;
             }
         }
-        elsif( $Record{-FIELDS}[$i]{-TYPE} eq 'textarea' ) { 
-            if( $Record{-ROWS} and not $field{-rows} ) {
-                $Record{-FIELDS}[$i]{-rows}      = $Record{-ROWS} ;
+        elsif( $Form{-FIELDS}[$i]{-TYPE} eq 'textarea' ) { 
+            if( $Form{-ROWS} and not $field{-rows} ) {
+                $Form{-FIELDS}[$i]{-rows}      = $Form{-ROWS} ;
             }
-            if( $Record{-COLUMNS} and not $field{-columns} ) {
-                $Record{-FIELDS}[$i]{-columns}   = $Record{-COLUMNS} ;
+            if( $Form{-COLUMNS} and not $field{-columns} ) {
+                $Form{-FIELDS}[$i]{-columns}   = $Form{-COLUMNS} ;
             }
         }
         $i++ ;
     }
 
-    if( $Record{-CHECK} and param() ) {
+    if( $Form{-CHECK} and param() ) {
         &_check_form ;
     }
     else {
@@ -107,74 +111,79 @@ sub show_form {
 
 sub _check_form {
 
-    $Record{-INVALID} = 0 ;
+    $Form{-INVALID} = 0 ;
     my %Field ;
 
     my $i = 0 ;
-    foreach my $fieldref ( @{$Record{-FIELDS}} ) {
+    foreach my $fieldref ( @{$Form{-FIELDS}} ) {
         my %field = %$fieldref ;
         # We have to write back to the original data, $fieldref only points to
         # a copy.
         my( $valid, $why ) = defined $field{-VALIDATE} ?
                                   &{$field{-VALIDATE}}( param( $field{-name} ) ) :
                                   ( 1, '' ) ;
-        $Record{-FIELDS}[$i]{-INVALID} = 1, 
-        $Record{-FIELDS}[$i]{-WHY}     = $valid ? undef : $why, 
-        $Record{-INVALID}++
+        $Form{-FIELDS}[$i]{-INVALID} = 1, 
+
+        $Form{-FIELDS}[$i]{-WHY}     = 
+        $valid ? undef : "<SPAN$Form{-STYLE_WHY}>$why</SPAN>", 
+
+        $Form{-INVALID}++
         if ( $field{-REQUIRED} and not param( $field{-name} ) ) or not $valid ;
+
         $Field{$field{-name}} = param( $field{-name} ) ;
         $i++ ;
     }
 
-    if( not $Record{-INVALID} and defined $Record{-VALIDATE} ) {
+    if( not $Form{-INVALID} and defined $Form{-VALIDATE} ) {
         # If all the individual parts are valid, check that the record as a
         # whole is valid. The parameters are presented in a name=>value hash.
-        my( $valid, $why ) = &{$Record{-VALIDATE}}( %Field ) ;
-        $Record{-INVALID}  = not $valid ;
-        $Record{-WHY}      = $why ;
+        my( $valid, $why ) = &{$Form{-VALIDATE}}( %Field ) ;
+        $Form{-INVALID}    = not $valid ;
+        $Form{-WHY}        = $why ;
     }
 
-    if( $Record{-INVALID} ) {
+    if( $Form{-INVALID} ) {
         &_show_form ;
     }
     else {
         # Clean any fields that have a clean routine specified.
-        foreach my $fieldref ( @{$Record{-FIELDS}} ) {
+        foreach my $fieldref ( @{$Form{-FIELDS}} ) {
             my %field = %$fieldref ;
             param( $field{-name}, &{$field{-CLEAN}}( param( $field{-name} ) ) )
             if defined $field{-CLEAN} ;
         }
-        &{$Record{-ACCEPT}} ;
+        &{$Form{-ACCEPT}} ;
     }
 }
 
 
 sub _show_form {
 
-    my $invalid = delete $Record{-INVALID} ;
-    my $why     = delete $Record{-WHY} ;
+    my $invalid = delete $Form{-INVALID} ;
+    my $why     = delete $Form{-WHY} ;
 
-    if( $Record{-HEADER} ) {
-        print $Record{-HEADER} ;
+    if( $Form{-HEADER} ) {
+        print $Form{-HEADER} ;
     }
     else {
         print 
             header,
-            start_html( $Record{-TITLE} ),
-            h3( $Record{-TITLE} ),
-            p( $Translate{$Record{-LANGUAGE}}{-INTRO} ),
+            start_html( $Form{-TITLE} ),
+            h3( $Form{-TITLE} ),
+            p( $Translate{$Form{-LANGUAGE}}{-INTRO} ),
             ;
     }
 
-    print $Translate{$Record{-LANGUAGE}}{-REQUIRED}   if $Record{-REQUIRED} ;
-    print " $Translate{$Record{-LANGUAGE}}{-INVALID}" if $invalid ;
-    print "<BR>$why" if $invalid and defined $why ;
+    print "<SPAN$Form{-STYLE_WHY}>$why</SPAN><BR>" if $invalid and defined $why ;
+    print $Translate{$Form{-LANGUAGE}}{-REQUIRED}  if $Form{-REQUIRED} ;
+    print " $Translate{$Form{-LANGUAGE}}{-INVALID}" 
+    if $invalid and not defined $why ;
 
-    print start_form, qq{<TABLE BORDER="0">} ;
+    print start_form, qq{<TABLE BORDER="$Form{-BORDER}"$Form{-TABLE_OPTIONS}>} ;
 
     my @hidden ;
 
-    foreach my $fieldref ( @{$Record{-FIELDS}} ) {
+    foreach my $fieldref ( @{$Form{-FIELDS}} ) {
         my %field    = %$fieldref ;
         my $type     = delete $field{-TYPE} ;
         push @hidden, $fieldref   if $type eq 'hidden' ;
@@ -184,8 +193,10 @@ sub _show_form {
         my $invalid  = delete $field{-INVALID} ;
         $invalid     = $invalid ? $INVALID : '' ;
         my $why      = delete $field{-WHY} ;
-        print qq{<TR><TD$Record{-STYLE_FIELDNAME}>$field{-LABEL}$required$invalid} .
-              qq{</TD><TD$Record{-STYLE_FIELDVALUE}>} ;
+        print qq{<TR$Form{-STYLE_ROW}><TD$Form{-STYLE_FIELDNAME}>} .
+              qq{$field{-LABEL}$required$invalid} .
+              qq{</TD><TD$Form{-STYLE_FIELDVALUE}>} ;
+        print "<SPAN$Form{-STYLE_DESC}>$field{-DESC}</SPAN><BR>" if $field{-DESC} ;
         delete @field{-LABEL,-VALIDATE,-CLEAN,-SIZE,-MAXLENGTH,-ROWS,-COLUMNS} ;
         no strict "refs" ;
         local $^W = 0 ; # Switch off moans about undefined values.
@@ -196,9 +207,9 @@ sub _show_form {
         print "</TD></TR>" ;
     }
 
-    print "</TABLE><SPAN$Record{-STYLE_BUTTONS}>" ;
+    print "</TABLE><SPAN$Form{-STYLE_BUTTONS}>" ;
 
-    foreach my $fieldref ( @{$Record{-BUTTONS}} ) {
+    foreach my $fieldref ( @{$Form{-BUTTONS}} ) {
         if( $fieldref->{-DEFAULTS} ) {
             print defaults( $fieldref->{-name} || 'Clear' ), " " ;
         }
@@ -218,8 +229,8 @@ sub _show_form {
 
     print end_form ; 
 
-    if( $Record{-FOOTER} ) {
-        print $Record{-FOOTER} ;
+    if( $Form{-FOOTER} ) {
+        print $Form{-FOOTER} ;
     }
     else {
         print hr, end_html ;
@@ -234,8 +245,8 @@ sub _on_valid_form {
 
     print
         header,
-        start_html( $Record{-TITLE} ),
-        h3( $Record{-TITLE} ),
+        start_html( $Form{-TITLE} ),
+        h3( $Form{-TITLE} ),
         p( "You must define your own &amp;on_valid_form subroutine, otherwise " .
            "the data will simply be thrown away." ),
         end_html,
@@ -247,8 +258,6 @@ BEGIN {
 
     $REQUIRED = '<SPAN style="font-weight:bold;color:BLUE">+</SPAN>' ;
     $INVALID  = '<SPAN style="font-weight:bold;color:RED">*</SPAN>' ;
-#    $REQUIRED = '<B><FONT COLOR="BLUE">+</FONT></B>' ;
-#    $INVALID  = '<B><FONT COLOR="RED">*</FONT></B>' ;
 
     %Translate = (
          'cy' => {
@@ -332,6 +341,7 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
 
     show_form(
         -ACCEPT           => \&on_valid_form, 
+        -BORDER           => 0,
         -FOOTER           => undef,
         -HEADER           => undef,      
         -LANGUAGE         => 'en',
@@ -345,6 +355,9 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
         -STYLE_FIELDNAME  => '',
         -STYLE_FIELDVALUE => '',
         -STYLE_BUTTONS    => '',
+        -STYLE_ROW        => '',
+        -STYLE_WHY        => '',
+        -TABLE_OPTIONS    => '',
         -FIELDS           => [            
             { 
                 -LABEL     => 'Name', 
@@ -352,60 +365,41 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
                 -TYPE      => 'textfield',
                 -VALIDATE  => undef, # Set this to validate the field
                 -CLEAN     => undef, # Set this to clean up valid data
+                -DESC      => undef,
                 # Lowercase options are those supplied by CGI.pm
                 -name      => undef, # Defaults to -LABEL's value.
                 -default   => undef,
                 -size      => 30,
                 -maxlength => undef,
             },
+            # For all others: same QuickForm options as above
+            # and all CGI.pm options (which vary with -TYPE) available 
             { 
                 -LABEL     => 'Address', 
-                -REQUIRED  => undef,
                 -TYPE      => 'textarea',
-                -VALIDATE  => undef,
-                -CLEAN     => undef,
-                -name      => undef,
-                -default   => undef,
                 -rows      => 3,
                 -columns   => 40,
             },
             { 
                 -LABEL     => 'Password', 
-                -REQUIRED  => undef,
                 -TYPE      => 'password_field',
-                -VALIDATE  => undef,
-                -CLEAN     => undef,
-                -name      => undef,
-                -value     => undef,
-                -size      => 10,
-                -maxlength => undef,
             },
             { 
                 -LABEL     => 'Hair colour', 
-                -REQUIRED  => undef,
                 -TYPE      => 'scrolling_list',
-                -VALIDATE  => undef,
-                -CLEAN     => undef,
-                -name      => undef,
-                -values    => [ qw( Red Black Brown Grey White ) ],
+                '-values'  => [ qw( Red Black Brown Grey White ) ],
                 -size      => 1,
                 -multiples => undef,
             },
             { 
                 -LABEL     => 'Worst Sport', 
-                -REQUIRED  => undef,
                 -TYPE      => 'radio_group',
-                -VALIDATE  => undef,
-                -CLEAN     => undef, 
-                -name      => undef,
                 -values    => [ qw( Boxing Cricket Golf ) ], 
                 -default   => 'Golf',
-                -size      => undef,
-                -multiples => undef,
             },
             # Any other CGI.pm field can be used in the same way.
         ],
-        -BUTTONS          => [
+        -BUTTONS           => [
             { -name => 'Add'    },
             { -name => 'Edit'   },
             { -name => 'List'   },
@@ -449,6 +443,10 @@ something like this:
         # Process, e.g. send an email or write a record to a file or database.
         # Give the user a thank you.
     }
+
+C<-BORDER> Optional integer. This is the border width. Default is zero. You
+would normally set this to 1 if you are using C<-DESC> to add textual
+descriptions to your fields.
 
 C<-BUTTONS> Optional array reference. This is an array of submit buttons. The
 buttons appear at the bottom of the form, after all the fields. Each button is
@@ -684,6 +682,12 @@ typical routine might clean up excess whitespace, e.g.:
         $_ ;
     }
 
+C<-DESC> Optional string. This is a short piece of descriptive text which
+appears above the field and is used to give the user a little guidance on what
+they should choose or enter. Normally if you use these then you would set the
+form-level C<-BORDER> option to 1 to help visually group the field and its
+descriptive text.
+
 C<-LABEL> Required string. This is the display label for the field. It is
 also used as the field's name if no C<-name> option is used.
 
@@ -747,8 +751,17 @@ class or style using the -STYLE_* options, e.g.
     -STYLE_FIELDNAME  => qq{style="font-size:12pt;margin:2em;"},
     -STYLE_FIELDVALUE => qq{class="mystyle.css"},
     -STYLE_BUTTONS    => qq{style="font-family:Helvetica;text-align:center;"},
+    -STYLE_ROW        => qq{style="mystyle.css"},
+    -STYLE_WHY        => qq{style="font-style:italic;color:red"},
+    -STYLE_DESC       => qq{style="color:darkblue"},
 
-See example3 (linux-help) for more examples.
+For tables you can set options (because most browsers don't seem to support
+styles in tables):
+
+    -TABLE_OPTIONS    => qq{BGCOLOR="WHITE"},
+
+
+See files, example3 (linux-help) and example5 (bicycle) for more examples.
 
 You can of course also apply your own global styles to the existing tags in
 the normal way.
@@ -881,14 +894,18 @@ production-quality program: it has no error checking and is I<not> secure.
         } ;
     }
 
+=head2 INTRODUCTORY ARTICLE
+
+See http://www.perlpress.com/perl/quickform.html or
+http://www.queenwood.fsnet.co.uk/perl/quickform.html
+
 =head1 BUGS
 
-None that have come to light (yet).
 Please don't use version 1.56, later or earlier versions are fine.
 
 =head1 AUTHOR
 
-Mark Summerfield. I can be contacted as <summer@chest.ac.uk> -
+Mark Summerfield. I can be contacted as <summer@perlpress.com> -
 please include the word 'quickform' in the subject line.
 
 See CHANGES for acknowledgements.
