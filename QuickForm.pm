@@ -1,6 +1,6 @@
 package CGI::QuickForm ; # Documented at the __END__.
 
-# $Id: QuickForm.pm,v 1.36 2000/03/14 19:48:17 root Exp root $
+# $Id: QuickForm.pm,v 1.44 2000/03/18 15:13:35 root Exp root $
 
 require 5.004 ;
 
@@ -15,7 +15,7 @@ use vars qw(
             %Translate 
             ) ;
 
-$VERSION   = '1.74' ; 
+$VERSION   = '1.75' ; 
 
 use Exporter() ;
 
@@ -30,11 +30,8 @@ use Exporter() ;
 sub colour { qq{<span style="color:$_[0]">$_[1]</span>} }
 
 
-my %Form ;
-
-
 sub show_form {
-    %Form = (
+    my %Form = (
         -LANGUAGE         => 'en',         # Language to use for default messages
         -TITLE            => 'Quick Form', # Default page title and heading
         -INTRO            => undef,
@@ -49,6 +46,7 @@ sub show_form {
         -BORDER           => 0,
         -CHECK            => 1,
         -SPACE            => 0,
+        -EXTRA_PATH       => '',
         -STYLE_FIELDNAME  => '',
         -STYLE_FIELDVALUE => '',
         -STYLE_BUTTONS    => '',
@@ -109,15 +107,16 @@ sub show_form {
     }
 
     if( $Form{-CHECK} and param() ) {
-        &_check_form ;
+        &_check_form( \%Form ) ;
     }
     else {
-        &_show_form ;
+        &_show_form( \%Form ) ;
     }
 }
 
 
 sub _check_form {
+    my %Form = %{$_[0]} ;
 
     $Form{-INVALID} = 0 ;
     my %Field ;
@@ -151,7 +150,7 @@ sub _check_form {
     }
 
     if( $Form{-INVALID} ) {
-        &_show_form ;
+        &_show_form( \%Form ) ;
     }
     else {
         # Clean any fields that have a clean routine specified.
@@ -166,6 +165,7 @@ sub _check_form {
 
 
 sub _show_form {
+    my %Form = %{$_[0]} ;
 
     my $invalid  = delete $Form{-INVALID} ;
     my $why      = delete $Form{-WHY} ;
@@ -188,7 +188,19 @@ sub _show_form {
     print " $Translate{$Form{-LANGUAGE}}{-INVALID}$n" 
     if $invalid and not defined $why ;
 
-    print start_form, qq{$n<table border="$Form{-BORDER}"$Form{-TABLE_OPTIONS}>$n} ;
+    # Could probably simply be
+    #   print start_form( -action => script_name() . $Form{-EXTRA_PATH} ) ;
+    # but wanted to be absolutely sure I didn't change behaviour for
+    # non-mod_perl users.
+    if( defined( $ENV{'GATEWAY_INTERFACE'} ) and 
+        ( $ENV{'GATEWAY_INTERFACE'} =~ /^CGI-Perl/ ) ) {
+        print start_form( -action => script_name() . $Form{-EXTRA_PATH} ) ;
+    }
+    else {
+        print start_form ; 
+    }
+
+    print qq{$n<table border="$Form{-BORDER}"$Form{-TABLE_OPTIONS}>$n} ;
 
     my @hidden ;
 
@@ -252,18 +264,23 @@ sub _show_form {
 
 
 sub _on_valid_form {
-
     # This is included for completeness - if you don't supply your own your
     # form will simply throw away the user's data!
 
     print
         header,
-        start_html( $Form{-TITLE} ),
-        h3( $Form{-TITLE} ),
+        start_html( 'Quick Form' ),
+        h3( 'Quick Form' ),
         p( "You must define your own &amp;on_valid_form subroutine, otherwise " .
            "the data will simply be thrown away." ),
         end_html,
         ;
+
+    # If using pure mod_perl you should add:
+    #   Apache::Constants::OK ;
+    # at the end of your on_valid_form routine and 
+    #   use Apache::Constants qw( :common ) ;
+    # along with your other use commands in your program.
 }
 
 
@@ -977,6 +994,43 @@ production-quality program: it has no error checking and is I<not> secure.
         } ;
     }
 
+
+=head2 mod_perl
+
+QuickForm appears to run fine in CGI scripts that run under Apache::Registry
+without requiring any changes.
+
+If you want to use QuickForm under pure mod_perl, i.e. outside
+Apache::Registry they you need to do the following:
+
+1. Add the following lines at the beginning of your script:
+
+    require 'CGI/Apache.pm' ;
+    use Apache::Constants qw( :common ) ;
+
+2. Ensure that any routines that return to mod_perl return OK. Normally this
+will be C<handler()> and C<on_valid_form()>. 
+
+3. Call C<show_form()> with C<-EXTRA_PATH> set to the name of the script.
+
+4. Convert your script into a module by wrapping the C<show_form()> call in a
+C<handler> subroutine etc.
+
+5. Copy the module into an Apache subdirectory in your C<@INC> path.
+
+6. Edit your Apache httpd.conf (or perl.conf) to add a Location for the
+module. 
+
+7. If you are converting a script that uses C<url()> you may need to add the
+name of the script, e.g. C<url() . $ExtraPath> where C<$ExtraPath> is the last
+element of the Location name. 
+
+See C<example6> for a working example that covers all the points above.
+C<example6> also has notes at the beginning to explain how to set things up.
+C<example6> is a simple conversion of C<example2> so you can see the simple
+changes required. Of course you don't have to change your scripts at all if
+you run them under Apache::Registry.
+
 =head2 INTRODUCTORY ARTICLE
 
 See http://www.perlpress.com/perl/quickform.html
@@ -984,6 +1038,12 @@ See http://www.perlpress.com/perl/quickform.html
 =head1 BUGS
 
 Please don't use version 1.56, later or earlier versions are fine.
+
+If you get messages like this under pure mod_perl:
+    [error] Undefined subroutine &Apache::xxxxxxx::handler called.
+the problem is with your configuration I<not> QuickForm, and I won't be able
+to help you. Please see the copious and high quality documentation at
+L<http://perl.apache.org> for help with this problem.
 
 =head1 AUTHOR
 

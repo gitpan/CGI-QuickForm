@@ -665,6 +665,43 @@ production-quality program: it has no error checking and is I<not> secure.
         } ;
     }
 
+
+=head2 mod_perl
+
+QuickForm appears to run fine in CGI scripts that run under Apache::Registry
+without requiring any changes.
+
+If you want to use QuickForm under pure mod_perl, i.e. outside
+Apache::Registry they you need to do the following:
+
+1. Add the following lines at the beginning of your script:
+
+    require 'CGI/Apache.pm' ;
+    use Apache::Constants qw( :common ) ;
+
+2. Ensure that any routines that return to mod_perl return OK. Normally this
+will be C<handler()> and C<on_valid_form()>. 
+
+3. Call C<show_form()> with C<-EXTRA_PATH> set to the name of the script.
+
+4. Convert your script into a module by wrapping the C<show_form()> call in a
+C<handler> subroutine etc.
+
+5. Copy the module into an Apache subdirectory in your C<@INC> path.
+
+6. Edit your Apache httpd.conf (or perl.conf) to add a Location for the
+module. 
+
+7. If you are converting a script that uses C<url()> you may need to add the
+name of the script, e.g. C<url() . $ExtraPath> where C<$ExtraPath> is the last
+element of the Location name. 
+
+See C<example6> for a working example that covers all the points above.
+C<example6> also has notes at the beginning to explain how to set things up.
+C<example6> is a simple conversion of C<example2> so you can see the simple
+changes required. Of course you don't have to change your scripts at all if
+you run them under Apache::Registry.
+
 =head2 INTRODUCTORY ARTICLE
 
 See http://www.perlpress.com/perl/quickform.html
@@ -672,6 +709,12 @@ See http://www.perlpress.com/perl/quickform.html
 =head1 BUGS
 
 Please don't use version 1.56, later or earlier versions are fine.
+
+If you get messages like this under pure mod_perl:
+    [error] Undefined subroutine &Apache::xxxxxxx::handler called.
+the problem is with your configuration I<not> QuickForm, and I won't be able
+to help you. Please see the copious and high quality documentation at
+L<http://perl.apache.org> for help with this problem.
 
 =head1 AUTHOR
 

@@ -1,0 +1,208 @@
+package Apache::QuickTest ;
+
+# $Id$
+
+# Copyright (c) Mark Summerfield 2000. All Rights Reserved.
+# 
+# This module may be used/distributed/modified under the LGPL.
+# 
+# I can be contacted as <summer@perlpress.com> -
+# please include the word 'quickform' in the subject line.
+#
+# Please note however that if your problems are due to errors like this:
+#
+#   [error] Undefined subroutine &Apache::QuickTest::handler called.
+#
+# then the problem is with YOUR CONFIGURATION not with this example or
+# QuickForm, (I know because I've had endless problems with this myself), and
+# I *cannot* help you!
+#
+# 
+# 
+#                           IMPORTANT NOTES
+#
+#
+# To make this example work you MUST do all the following:
+#
+# 1. Rename this as something.pm, e.g. QuickTest.pm
+# 2. Copy it into an Apache subdirectory in your @INC path
+# 3. Edit your Apache httpd.conf (or perl.conf) to add a Location for this
+#    example, e.g. (assuming you've renamed it QuickTest.pm):
+#
+# 		<Location /mod_perl/quicktest>
+# 		    SetHandler      perl-script
+# 		    PerlHandler     Apache::QuickTest
+# 		</Location>
+# 		
+# You can then invoke the script as http://localhost/mod_perl/quicktest
+# (You can of course use any location you like; but it should *not* be a real
+# path on your machine!)
+#
+# If you are converting an existing script that uses QuickForm for pure
+# mod_perl, (i.e. not for Apache::Registry), then if you use url() as a link
+# back to the form, perhaps with extra parameters, e.g. 
+#   url() . '?MyParam1=ONE'
+# you will need to change this to
+#   url() . $ExtraPath . '?MyParam1=ONE'
+# where $ExtraPath is the name of the script -- compare this example to
+# example2 in this regard in the -FOOTER setup of their show_form() calls.
+#
+# You will also need to add the following lines at the beginning:
+#
+#       require 'CGI/Apache.pm' ;
+#       use Apache::Constants qw( :common ) ;
+#
+# Howling at the moon may also help, but if you're not in good voice mod_perl
+# comes with *excellent* documentation both in print and free on-line -- visit
+# http://perl.apache.org
+
+use strict ;
+
+require 'CGI/Apache.pm' ;   # ADDED FOR MOD_PERL
+use Apache::Constants qw( :common ) ;   # ADDED FOR MOD_PERL
+use CGI qw( :standard :html3 ) ;
+use CGI::QuickForm qw( show_form colour ) ;
+
+my $ExtraPath = '/quicktest' ; # ADDED FOR MOD_PERL
+
+sub handler { # ADDED FOR MOD_PERL
+
+    show_form(
+        -SPACE      => 0,
+        -EXTRA_PATH => $ExtraPath,
+        -CHECK      => ( query_string() =~ /QFCHK=0/o ? 0 : 1 ), 
+        -FOOTER     => qq{<a href="} . #" 
+                      url() . $ExtraPath .  # ADDED FOR MOD_PERL
+                      qq{?QFCHK=0\&Age=28\&Surname=Bloggs\&Forename=Freda">} . #"
+                      qq{Defaults</a>} . 
+                      end_html,
+    #    -LANGUAGE   => 'de',
+        -BUTTONS    => [ { -name => 'Add' }, { -name => 'Del' } ],
+    #    -STYLE_BUTTONS  => qq{style="font-family:Times;text-align:center;"},
+        -STYLE_BUTTONS  => 'center',
+        -TITLE      => 'Test Form',
+        -ACCEPT     => \&on_valid_form, 
+        -SIZE       => 40,
+        -STYLE_WHY  => 'style="font-style:italic;color:red"', 
+        -VALIDATE   => sub { ( int rand(2), "<P>" . colour( 'RED', 'Randomly Invalid' ) ) },
+        -FIELDS    => [
+            {
+                -LABEL    => 'Forename',
+                -CLEAN    => \&cleanup, 
+                -VALIDATE => sub { 
+                                my $valid = length shift > 3 ; 
+                                ( $valid, 'Name too short' ) ;
+                            }
+            },
+            {
+                -LABEL    => 'Surname',
+                -CLEAN    => \&cleanup, 
+                -REQUIRED => 1,
+                -VALIDATE => sub { 
+                                my $valid = length shift > 3 ; 
+                                ( $valid, 'Name too short' ) ;
+                            }
+            },
+            {
+                -LABEL    => 'Age',
+                -VALIDATE => &mk_valid_number( 3, 130 ), 
+                -size     => 10,
+            },
+            { 
+                -LABEL     => 'Address', 
+                -REQUIRED  => undef,
+                -TYPE      => 'textarea',
+                -VALIDATE  => undef,
+                -name      => undef, # Defaults to -LABEL's value.
+                -default   => undef,
+                -rows      => 3,
+                -columns   => 40,
+            },
+            {
+                -LABEL => 'Sex',
+                -TYPE  => 'radio_group',
+                '-values' => [ qw( Female Male ) ],
+            },
+            { 
+                -LABEL     => 'Password', 
+                -REQUIRED  => undef,
+                -TYPE      => 'password_field',
+                -VALIDATE  => undef,
+                -name      => undef, # Defaults to -LABEL's value.
+                -value     => undef,
+                -size      => 10,
+                -maxlength => undef,
+            },
+            { 
+                -LABEL     => 'Hair colour', 
+                -REQUIRED  => undef,
+                -TYPE      => 'scrolling_list',
+                -VALIDATE  => undef,
+                -name      => undef, # Defaults to -LABEL's value.
+                '-values'  => [ qw( Red Black Brown Grey White ) ],
+                -size      => 1,
+                -multiples => undef,
+            },
+            { 
+                -LABEL     => 'Worst Sport', 
+                -REQUIRED  => undef,
+                -TYPE      => 'radio_group',
+                -VALIDATE  => undef,
+                -name      => undef, # Defaults to -LABEL's value.
+                '-values'  => [ qw( Boxing Cricket Golf ) ], 
+                -default   => 'Golf',
+                -size      => undef,
+                -multiples => undef,
+            },
+        ],
+    ) ;
+   
+    OK ;    # ADDED FOR MOD_PERL
+}
+
+
+sub cleanup {
+    local $_ = shift ; # This is the value of param( <fieldname> )
+
+    tr/\t \n\r\f/ /s ; # Convert multiple whitespace to one space.
+    s/^\s*//o ; # Remove leading whitespace.
+    s/\s*$//o ; # Remove trailing whitespace.
+
+    $_ ;
+}
+
+
+sub on_valid_form {
+
+    my @keys = param ;
+
+    # Process the data in some way, e.g. save it to a file or database.
+
+    print
+        header,
+        start_html( 'Test Form Data Accepted' ),
+        h3( 'Test Form Data Accepted' ),
+        p( "Thank you ", param( 'Forename' ), " for your data." ),
+        ;
+    print qq{<table border="0">} ;
+    local $_ ;
+    foreach( @keys ) {
+        print "<tr><td>$_</td><td>", param( $_ ), "</td></tr>" ;
+    }
+    print "</table><p /><hr />" ;
+
+    OK ;    # ADDED FOR MOD_PERL
+}
+
+
+sub mk_valid_number {
+    my( $min, $max ) = @_ ;
+
+    sub { 
+        my $valid = $_[0] ? ( $min <= $_[0] and $_[0] <= $max ) : 1 ;
+        ( $valid, "Number should be between $min and $max inclusive" ) ;
+    } ;
+}
+
+
+1 ;

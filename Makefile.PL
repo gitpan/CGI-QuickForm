@@ -9,7 +9,7 @@ WriteMakefile(
     'DISTNAME'     => 'CGI-QuickForm',
     ($] >= 5.005 ?
         (
-            ABSTRACT => 'Provides quick CGI forms',
+            ABSTRACT => 'Provides quick CGI forms for CGI and mod_perl',
             AUTHOR   => 'Mark Summerfield <summer@perlpress.com>',
         ) : () ),
     'LIBS'         => [''],   # e.g., '-lm'

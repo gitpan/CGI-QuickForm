@@ -1,7 +1,5 @@
 #!/usr/bin/perl -Tw
 
-# $Id: contacts,v 1.17 1999/10/24 13:49:38 root Exp root $
-
 # Copyright (c) Mark Summerfield 1999-2000. All Rights Reserved.
 # May be used/distributed under the GPL.
 
@@ -14,9 +12,11 @@
 
 # Set $SHOW_SQL = 1 to see the SQL being executed.
 
+# Thanks to Marcel Dorenbos for some ideas and a bug fix.
+
 # TODO validation - field & record
 # TODO lookups (drop down lists) for key X val tables (equiv Oracle LOVs)
-# TODO drilldown support Table=tablename&Keyfield=fieldname&Orderby=fieldname&ID=value
+# TODO drilldown support Table=tablename&Keyfield=fieldname&Orderby=fieldname&KEYFIELD=value
 # TODO generalise into a module
 
 # The table this example is based on was created thus:
@@ -48,7 +48,7 @@ use HTML::Entities ;
 use URI::Escape ;
 
 use vars qw( $VERSION ) ;
-$VERSION     = '1.00' ;
+$VERSION     = '1.02' ;
 
 my $ACTION   = '.qfdb' ;
 my( $ADD, $DELETE, $EDIT, $FIND, $LIST, $ORDERBY, $REMOVE, $SEARCH, 
@@ -69,9 +69,9 @@ my %COLOUR          = (
     -LIST_BAND2 => '#EDEDED',
     ) ;
 my $TITLE           = 'Contacts' ;
-my $DATABASE        = '/root/web/db/contacts' ;
+my $DATABASE        = '/root/web/db/contactsqf' ;
 my $KEYFIELD        = 'ID' ;
-my $INITIAL_ORDERBY = 'ID' ;
+my $INITIAL_ORDERBY = $KEYFIELD ;
 # The XBase driver only supports a single WHERE item and does not support
 # LIKE. The CSV driver does not appear to support WHERE at all.
 #my $TABLE    = 'contacts_csv' ;
@@ -111,24 +111,28 @@ my @FIELD    = (
                 -DB_HTML   => undef,
                 -LABEL     => 'Home Tel.',
                 -VALIDATE  => \&valid_phone,
+                -default   => '01225 ',
             },
             {
                 -DB_NAME   => 'WORKTEL',
                 -DB_HTML   => undef,
                 -LABEL     => 'Work Tel.',
                 -VALIDATE  => \&valid_phone,
+                -default   => '01225 ',
             },
             {
                 -DB_NAME   => 'MOBILE',
                 -DB_HTML   => undef,
                 -LABEL     => 'Mobile',
                 -VALIDATE  => \&valid_phone,
+                -default   => '070 ',
             },
             {
                 -DB_NAME   => 'FAX',
                 -DB_HTML   => undef,
                 -LABEL     => 'Fax',
                 -VALIDATE  => \&valid_phone,
+                -default   => '01225 ',
             },
             {
                 -DB_NAME   => 'EMAIL',
@@ -142,6 +146,7 @@ my @FIELD    = (
                         ( ( ( $_ eq '' ) or ( /^[^@]+@[^@]+\.\w+$/o ) ), 
                         "Should be like <TT>name\@site.com</TT>" ) ;
                     },
+                -default   => '.com',
                 -size      => 25,
                 -maxlen    => 60,
             },
@@ -222,8 +227,8 @@ if( not param( $ACTION ) ) {
     param( $ACTION, param( $UPDATE ) ) if param( $UPDATE ) ;
 }
 
-my $Action = param( $ACTION )   || $INITIAL_ACTION ;  
-my $ID     = param( $KEYFIELD ) || '' ; 
+my $Action      = param( $ACTION )   || $INITIAL_ACTION ;  
+my $KEYFIELDVAL = param( $KEYFIELD ) || '' ; 
 
 for( my $i = 0 ; $i <= $#FIELD ; $i++ ) {
     # Set any -DB_* defaults here.
@@ -260,15 +265,15 @@ sub quit {
      
 sub on_valid_form {
 
-    my $result = p( "Action is $Action, ID is $ID" ) ; # DEBUG
+    my $result = p( "Action is $Action, $KEYFIELD is $KEYFIELDVAL" ) ; # DEBUG
 
     if( $Action eq $ADD ) {
         $result = &insert_record ; 
     }
-    elsif( $Action eq $REMOVE and $ID ) {
+    elsif( $Action eq $REMOVE and $KEYFIELDVAL ) {
         $result = &execute_sql( 
-                        "DELETE FROM $TABLE WHERE $KEYFIELD = '$ID'",
-                        p( colour( "BLUE", "Record $ID deleted successfully" ) )
+                        "DELETE FROM $TABLE WHERE $KEYFIELD = '$KEYFIELDVAL'",
+                        p( colour( "BLUE", "Record $KEYFIELDVAL deleted successfully" ) )
                         ) ;
     }
     elsif( $Action eq $UPDATE ) {
@@ -314,8 +319,8 @@ sub add_or_edit_record {
     CGI::delete( $ADD ) ;
     my $check  = 1 ;
     my $button = $ADD ;
-    my $delete = $ID ? 
-                    qq{<a href="$URL?$ACTION=$DELETE\&ID=$ID">$DELETE</a> } :
+    my $delete = $KEYFIELDVAL ? 
+        qq{<a href="$URL?$ACTION=$DELETE\&$KEYFIELD=$KEYFIELDVAL">$DELETE</a> } :
                     '' ;
     my $add = $Action eq $ADD ? '' : qq{<a href="$URL?$ACTION=$ADD">$ADD</a> } ;
     $button    = $UPDATE if param( $UPDATE ) or $Action eq $EDIT ;
@@ -323,10 +328,14 @@ sub add_or_edit_record {
         $check = 0 ;
         $result = &retrieve_record ;
         CGI::delete( $EDIT ) ;
-        CGI::delete( $ID ) ;
+        CGI::delete( $KEYFIELDVAL ) ;
         push @field, 
             { -name => $UPDATE,      -TYPE => 'hidden' },
-            { -name => 'OriginalID', -TYPE => 'hidden', -value => $ID };
+            { 
+                -name => 'OriginalKEYFIELD', 
+                -TYPE => 'hidden', 
+                -value => $KEYFIELDVAL 
+            } ;
     }
     my $title = $Action eq $UPDATE ? $EDIT : $Action ;
 
@@ -388,9 +397,9 @@ sub delete_record {
 
     print
         "</table>",
-        p( qq{<a href="$URL?$ACTION=$REMOVE\&ID=$ID">Confirm Delete</a>} 
+        p( qq{<a href="$URL?$ACTION=$REMOVE\&$KEYFIELD=$KEYFIELDVAL">Confirm Delete</a>} 
         . '&nbsp;&nbsp;' .
-        qq{<a href="$URL?$ACTION=$EDIT\&ID=$ID">$EDIT</a>} ),
+        qq{<a href="$URL?$ACTION=$EDIT\&$KEYFIELD=$KEYFIELDVAL">$EDIT</a>} ),
         p( qq{<a href="$URL?$ACTION=$ADD">$ADD</a> } . 
         qq{<a href="$URL?$ACTION=$FIND">$FIND</a> } . 
         qq{<a href="$URL?$ACTION=$LIST">$LIST</a>} ),
@@ -512,9 +521,9 @@ sub list_records {
             $colour = ( $colour eq $colour[0] ) ? $colour[1] : $colour[0] ;
             print
                 qq{<td align="CENTER">},
-                qq{<a href="$URL?$ACTION=$EDIT\&ID=$id">$EDIT</a></td>}, 
+                qq{<a href="$URL?$ACTION=$EDIT\&$KEYFIELD=$id">$EDIT</a></td>}, 
                 qq{<td align="CENTER">},
-                qq{<a href="$URL?$ACTION=$DELETE\&ID=$id">$DELETE</a></td>} ;
+                qq{<a href="$URL?$ACTION=$DELETE\&$KEYFIELD=$id">$DELETE</a></td>} ;
             for( my $i = 0 ; $i < $#FIELD ; $i++ ) {
                 my $field = $field[$i] ;
                 if( my $html = $FIELD[$i]->{-DB_HTML} and $field ) {
@@ -536,7 +545,9 @@ sub list_records {
         $sth->finish() ;
     } ;
     if( $@ ) { 
-        print '</table>' . &fail_form( "$@ <p>Executed:<br />$stmt" ) ;
+        print '</table>' . &fail_form( "$@ <p>Executed:<br />$stmt" .
+        "<p>(My version of CSV doesn't support WHERE; my version of XBase " .
+        "doesn't support LIKE.)" ) ;
     }
     else {
         print '</table>' ;
@@ -572,7 +583,7 @@ sub insert_record {
     substr( $stmt, -2, 2 ) = " )" ;
 
     &execute_sql( $stmt,  
-                  p( colour( "BLUE", "Record $ID added successfully" ) ) ) ;
+                  p( colour( "BLUE", "Record $KEYFIELDVAL added successfully" ) ) ) ;
 }
 
 
@@ -589,10 +600,10 @@ sub update_record {
         $stmt .= " $fieldref->{-DB_NAME} = $quote$value$quote, " ; 
     }
     chop $stmt ; chop $stmt ;
-    $stmt .= " WHERE ID = '" . param( 'OriginalID' ) . "'" ;
+    $stmt .= " WHERE $KEYFIELD = '" . param( 'OriginalKEYFIELD' ) . "'" ;
     
     &execute_sql( $stmt,
-                  p( colour( "BLUE", "Record $ID updated successfully" ) ) ) ;
+                  p( colour( "BLUE", "Record $KEYFIELDVAL updated successfully" ) ) ) ;
 }
 
 
@@ -607,7 +618,7 @@ sub retrieve_record {
     chop $stmt ; chop $stmt ;
     $stmt .= " FROM $TABLE WHERE $KEYFIELD = '" .
                param( &fieldname2label( $KEYFIELD ) ) . "'" ;
-    my $result ;
+    my $result = '' ; # Avoids warnings.
     $result = p( "Executed:<br />", colour( 'DARKBLUE', $stmt ) ) if $SHOW_SQL ;
 
     my @field ;
@@ -684,12 +695,11 @@ sub fieldname2label {
     my $fieldname = shift ;
     my $label ;
 
-
     foreach my $fieldref ( @FIELD ) {
         next unless ( defined $fieldref->{-LABEL} and 
                       defined $fieldref->{-DB_NAME} ) ;
         $label = $fieldref->{-LABEL}, last 
-        if $fieldname = $fieldref->{-DB_NAME} ;
+        if $fieldname eq $fieldref->{-DB_NAME} ; 
     }
 
     $label ;

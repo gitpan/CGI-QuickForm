@@ -1,3 +1,37 @@
+2000/03/17
+
+If you have CGI scripts that use QuickForm they will run as-is under mod_perl
+using Apache::Registry.
+
+From v1.75 you can also run QuickForm under pure mod_perl, i.e. without using
+Apache::Registry. You do have to modify the scripts slightly but this is
+documented in the pod and also in the new example6 which has been added.
+QuickForm is not specifically optimised for pure mod_perl, i.e. it doesn't
+make use of the Apache request object, but should still deliver far better
+performance.
+
+
+2000/03/16
+
+Marcel Dorenbos spotted a bug in example4 which I've now corrected.
+
+
+2000/03/15
+
+Preliminary experiments with mod_perl. Using Apache::Registry seems fine; but
+outside of that does not work. Problem is that between form reloads (sometimes
+even before the first reload) we get a handler not found error; simply
+reloading solves the problem but is hardly a solution... hopefully once I
+understand mod_perl better will fix, but if anyone figures it out I'll be
+happy to include their fixes.
+
+
+2000/03/14
+
+Updated example4 to make it a tiny bit more generic along lines suggested by
+Marcel Dorenbos.
+
+
 2000/03/14
 
 Corrected an error, identified by Lou Hevly, in the second example given in
