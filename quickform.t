@@ -28,7 +28,7 @@ sub report {
     my $e    = shift ;
 
     ++$Count ;
-    printf STDERR "[%03d] $test(): ", $Count if $DEBUG ;
+    printf "[%03d] $test(): ", $Count if $DEBUG ;
 
     if( $flag == 0 and not $e ) {
         print "ok $Count\n" ;

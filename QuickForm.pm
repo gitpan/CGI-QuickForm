@@ -1,6 +1,6 @@
 package CGI::QuickForm ; # Documented at the __END__.
 
-# $Id: QuickForm.pm,v 1.32 2000/02/08 20:02:44 root Exp $
+# $Id: QuickForm.pm,v 1.33 2000/02/09 23:21:38 root Exp root $
 
 require 5.004 ;
 
@@ -15,7 +15,7 @@ use vars qw(
             %Translate 
             ) ;
 
-$VERSION   = '1.70' ; 
+$VERSION   = '1.71' ; 
 
 use Exporter() ;
 
@@ -82,7 +82,7 @@ sub show_form {
         # a copy.
         foreach my $style ( qw( ROW FIELDNAME FIELDVALUE DESC ) ) {
             my $value = $Form{-FIELDS}[$i]{"-STYLE_$style"} || $Form{"-STYLE_$style"} ;
-            $Form{-FIELDS}[$i]{"-STYLE_$style"} = " $value" if $value ;
+            $Form{-FIELDS}[$i]{"-STYLE_$style"} = $value ? " $value" : '' ;
         }
         $Form{-FIELDS}[$i]{-LABEL} = $field{-name}  unless $field{-LABEL} ;
         $Form{-FIELDS}[$i]{-name}  = $field{-LABEL} unless $field{-name} ;
@@ -206,7 +206,7 @@ sub _show_form {
         my $descstyle  = delete $field{-STYLE_DESC} ;
         print qq{<tr$rowstyle><td$namestyle>$field{-LABEL}$required$invalid} .
               qq{</td><td$valuestyle>} ;
-        print "<span$descstyle>$field{-DESC}</span><br />" if $descstyle ;
+        print "<span$descstyle>$field{-DESC}</span><br />" if $field{-DESC} ;
         delete @field{-LABEL,-VALIDATE,-CLEAN,-SIZE,-MAXLENGTH,-ROWS,-COLUMNS} ;
         no strict "refs" ;
         local $^W = 0 ; # Switch off moans about undefined values.
