@@ -1,6 +1,6 @@
 package CGI::QuickForm ; # Documented at the __END__.
 
-# $Id: QuickForm.pm,v 1.69 2001/01/05 19:45:32 mark Exp mark $
+# $Id: QuickForm.pm,v 1.70 2001/07/31 18:18:34 mark Exp mark $
 
 require 5.004 ;
 
@@ -14,7 +14,7 @@ use vars qw(
             %Translate 
             ) ;
 
-$VERSION = '1.91' ; 
+$VERSION = '1.92' ; 
 
 use Exporter() ;
 
@@ -327,7 +327,7 @@ sub _on_valid_form {
     #   Apache::Constants::OK ;
     # at the end of your on_valid_form routine and 
     #   use Apache::Constants qw( :common ) ;
-    # along with your other use commands in your program.
+    # along with the other 'use' commands in your program.
 }
 
 
@@ -368,6 +368,11 @@ BEGIN {
             -INVALID  => "Des zones de saisie de donn&eacute;es " .
                          "identifi&eacute;es par ~I~ contenez les " .
                          "erreurs ou soyez vide.",
+            },
+        'he' => {
+            -INTRO    => "נא הזן נתונים",
+            -REQUIRED => " שדות חובה מסומנים ב ~R~ ",
+            -INVALID  => " שדות שגויים או ריקים מסומנים ב ~I~",
             },
         ) ;
 }
@@ -723,20 +728,33 @@ C<-ONSUBMIT>.)
 
 =item C<-LANGUAGE> 
 
-Optional string. This option accepts 'en' (english), 'cy' (welsh), 'de'
-(german), 'es' (spanish) and 'fr' (french) - the French translation was done
-by Babelfish - see CHANGES for the human translators. ('english' is also
-supported for backward compatibility.) If people provide me with translations
-I will add other languages. This is used for the presentation of messages to
-the user, e.g.:
+Optional string. This option accepts 'en' (English), 'cy' (Welsh), 'de'
+(German), 'es' (Spanish), 'fr' (French) and 'he' (Hebrew) - the French
+translation was done by Babelfish - see CHANGES for the human
+translators. ('english' is also supported for backward compatibility.)
+If people provide me with translations I will add other languages.
+This is used for the presentation of messages to the user, e.g.:
 
     Please enter the information.
     Fields marked with + are required.
     Fields marked with * contain errors or are empty.
 
 If you want to create your own 'required' or 'invalid' strings using the
-C<-USER_REQUIRED> and/or C<-USER_INVALID> options you I<must> set C<-LANGUAGE>
-to 'user'. 
+C<-USER_REQUIRED> and/or C<-USER_INVALID> options and set C<-LANGUAGE>
+to 'user'. If you want your own 'intro' string set it with C<-INTRO>.
+
+If you're using hebrew, 'he', you will need to define your own header,
+that specifies an appropriate character set, language and writing
+direction. For example:
+
+    my $header = header( -charset => 'windows-1255' ) . 
+		 start_html( -lang => 'hebrew', -title => 'My Title' ) .  
+		 qq{<div dir="RTL">} . 
+		 h2( 'My Title' );
+    show_form(
+	-HEADER => $header,
+	-LANGUAGE => 'he',
+	# etc.
 
 See C<example1>.
 
@@ -747,8 +765,8 @@ producing a two column table, the first column with field names and the second
 column with field values. If true QuickForm will put all field names and field
 values in the same row, except where you force a new row to be used by marking
 some fields with C<-END_ROW => 1,>. See the field-level options C<-START_ROW>,
-C<-END_ROW> and C<-COLSPAN>. See C<example2> and C<example4> which have been updated
-to demonstrate these options.
+C<-END_ROW> and C<-COLSPAN>. See C<example2> and C<example4> which have been 
+updated to demonstrate these options.
 
 =item C<-NAME>
 
@@ -1359,7 +1377,7 @@ See CHANGES for acknowledgements.
 
 =head1 COPYRIGHT
 
-Copyright (c) Mark Summerfield 1999-2000. All Rights Reserved.
+Copyright (c) Mark Summerfield 1999-2001. All Rights Reserved.
 
 This module may be used/distributed/modified under the LGPL.
 

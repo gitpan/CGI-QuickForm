@@ -14,7 +14,7 @@
 # your cgi-bin directory and made executable.
 
 # linux-help has only ever been run as root on a local system - multi-user use
-# is not supported (since I do no record locking), in other words its only for
+# is not supported (since I do no record locking), in other words it's only for
 # a single person to use. This program also uses the undocumented colour()
 # function from QuickForm. (This is one of CGI::QuickForm's example programs.)
 

@@ -13,11 +13,21 @@ use strict ;
 use CGI qw( :standard :html3 ) ;
 use CGI::QuickForm ;
 
-my @lang = qw( cy de en es fr ) ;
+my @lang = qw( cy de en es fr he ) ;
 my $lang = $lang[int rand @lang] ; # A different language every invocation!
 
+my $header;
+if ( $lang ne 'he' ) {
+    $header = header() . start_html( -title => 'Email Example' ); 
+}
+else {
+    $header = header( -charset => 'windows-1255' ) . 
+	      start_html( -lang => 'hebrew', -title => 'Email Example' ) .  
+	      qq{<div dir="RTL">}; 
+}
 
 show_form(
+    -HEADER	   => $header . h3( 'Email Example' ),
     -LANGUAGE      => $lang, 
     -TITLE         => 'Test Form',
     -REQUIRED_HTML => 
