@@ -48,17 +48,27 @@ use HTML::Entities ;
 use URI::Escape ;
 
 use vars qw( $VERSION ) ;
-$VERSION     = '1.02' ;
+$VERSION     = '1.04' ;
 
-my $ACTION   = '.qfdb' ;
-my( $ADD, $DELETE, $EDIT, $FIND, $LIST, $ORDERBY, $REMOVE, $SEARCH, 
-    $UPDATE, $WHERE ) = 
-    qw( Add Delete Edit Find List OrderBy Remove Search Update Where ) ;
+use readonly
+        '$ACTION'  => '.qfdb',
+
+        '$ADD'     => 'Add', 
+        '$DELETE'  => 'Delete', 
+        '$EDIT'    => 'Edit', 
+        '$FIND'    => 'Find', 
+        '$LIST'    => 'List', 
+        '$ORDERBY' => 'OrderBy', 
+        '$REMOVE'  => 'Remove', 
+        '$SEARCH'  => 'Search', 
+        '$UPDATE'  => 'Update', 
+        '$WHERE'   => 'Where', 
+        ;
 
 # Database specific start
-my $SHOW_SQL        = 0 ;
-# For large tables change $LIST to $FIND as the default initial action
-my $INITIAL_ACTION  = $LIST ;
+use readonly '$SHOW_SQL' => 0 ; 
+
+
 my %COLOUR          = (
     -FORM_BG    => '#FFCAFF',
     -DEL_HEAD   => '#E6BEFF',
@@ -68,16 +78,20 @@ my %COLOUR          = (
     -LIST_BAND1 => '#FAFAFA',
     -LIST_BAND2 => '#EDEDED',
     ) ;
-my $TITLE           = 'Contacts' ;
-my $DATABASE        = '/root/web/db/contactsqf' ;
-my $KEYFIELD        = 'ID' ;
-my $INITIAL_ORDERBY = $KEYFIELD ;
+
+use readonly
+        '$TITLE'           => 'Contacts', 
+        '$DATABASE'        => '/root/web/db/contactsqf', 
+        '$KEYFIELD'        => 'ID', 
+        '$INITIAL_ORDERBY' => 'ID', 
 # The XBase driver only supports a single WHERE item and does not support
 # LIKE. The CSV driver does not appear to support WHERE at all.
-#my $TABLE    = 'contacts_csv' ;
-#my $CONNECT  = "DBI:CSV:f_dir=$DATABASE" ;
-my $TABLE    = 'contacts' ;
-my $CONNECT  = "DBI:XBase:$DATABASE" ;
+#my $TABLE    => 'contacts_csv',
+#my $CONNECT  => "DBI:CSV:f_dir=>$DATABASE",
+        '$TABLE'           => 'contacts', 
+        '$CONNECT'         => "DBI:XBase:/root/web/db/contactsqf", 
+        ;
+
 my @FIELD    = (
             {
                 -DB_NAME   => 'ID',
@@ -226,17 +240,20 @@ my $Dbh = DBI->connect( $CONNECT ) or &fail_form( $DBI::errstr ) ;
 $Dbh->{'RaiseError'} = 1 ; # DBI exception handling.
 
 if( not param( $ACTION ) ) {
-    param( $ACTION, param( $ADD    ) ) if param( $ADD ) ;
-    param( $ACTION, param( $DELETE ) ) if param( $DELETE ) ;
-    param( $ACTION, param( $EDIT   ) ) if param( $EDIT ) ;
-    param( $ACTION, param( $FIND   ) ) if param( $FIND ) ;
-    param( $ACTION, param( $LIST   ) ) if param( $LIST ) ;
-    param( $ACTION, param( $REMOVE ) ) if param( $REMOVE ) ;
-    param( $ACTION, param( $SEARCH ) ) if param( $SEARCH ) ;
-    param( $ACTION, param( $UPDATE ) ) if param( $UPDATE ) ;
+    param( $ACTION,
+        param( $ADD )    ||
+        param( $DELETE ) ||
+        param( $EDIT )   ||
+        param( $FIND )   ||
+        param( $LIST )   ||
+        param( $REMOVE ) ||
+        param( $SEARCH ) ||
+        param( $UPDATE ) ||
+        # For large tables change $LIST to $FIND as the default initial action
+        $LIST
+        ) ;
 }
-
-my $Action      = param( $ACTION )   || $INITIAL_ACTION ;  
+my $Action = param( $ACTION ) ;
 my $KEYFIELDVAL = param( $KEYFIELD ) || '' ; 
 
 for( my $i = 0 ; $i <= $#FIELD ; $i++ ) {

@@ -1,3 +1,19 @@
+2000/04/23
+
+You can now override the red * and blue + with any HTML you like to indicate
+invalid and required fields respectively. The new options are -INVALID_HTML
+and -REQUIRED_HTML. See the updated example1 for a garish example; this means
+that you can use <img> tags, e.g. 
+
+    -INVALID_HTML =>  '<img src="/images/invalid.png">', 
+    
+This is thanks to a suggestion by Mark Lybrand who has also provided a Spanish
+translation so you can now set -LANGUAGE to 'es'.
+
+Note: at least one example (but not QuickForm itself) now requires my
+readonly.pm pragma which is available from my website or CPAN.
+
+
 2000/04/08
 
 Added -HEADLINE which allows you to create titles (headlines) to separate out

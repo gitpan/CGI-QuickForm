@@ -1,6 +1,6 @@
-#!/usr/bin/perl -Tw
+#!/usr/bin/perl -w
 
-# $Id: quickform,v 1.12 2000/04/08 11:32:05 root Exp $
+# $Id: quickform,v 1.13 2000/04/23 14:04:36 root Exp root $
 
 # Copyright (c) Mark Summerfield 1999-2000. All Rights Reserved.
 # May be used/distributed under the GPL.

@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id: quickemailform,v 1.8 2000/04/08 11:07:16 root Exp root $
+# $Id: quickemailform,v 1.9 2000/04/23 14:04:36 root Exp root $
 
 # Copyright (c) Mark Summerfield 1999-2000. All Rights Reserved.
 # May be used/distributed under the GPL.
@@ -13,8 +13,17 @@ use strict ;
 use CGI qw( :standard :html3 ) ;
 use CGI::QuickForm ;
 
+my @lang = qw( cy de en es fr ) ;
+my $lang = $lang[int rand @lang] ; # A different language every invocation!
+
+
 show_form(
+    -LANGUAGE      => $lang, 
     -TITLE         => 'Test Form',
+    -REQUIRED_HTML => 
+        '<span style="font-family:helvetica;font-size:24pt;color:GREEN">?</span>',
+    -INVALID_HTML  => 
+        '<span style="font-family:helvetica;font-size:24pt;color:RED">!</span>',
     -ACCEPT        => \&on_valid_form, 
     -TABLE_OPTIONS => 'bgcolor="#EEEEEE"',
     -SPACE         => 1,

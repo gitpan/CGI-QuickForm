@@ -32,7 +32,7 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
     }
 
 
-    # All QuickForm options
+    # All QuickForm options (aide memoir)
 
     #!/usr/bin/perl -w
     use strict ;
@@ -47,6 +47,8 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
         -INTRO            => undef,
         -LANGUAGE         => 'en',
         -TITLE            => 'Test Form',
+        -REQUIRED_HTML    => '<span style="font-weight:bold;color:BLUE">+</span>',
+        -INVALID_HTML     => '<span style="font-weight:bold;color:RED">*</span>',
         -VALIDATE         => undef,       # Set this to validate the entire record
         -SIZE             => undef,
         -MAXLENGTH        => undef,
@@ -142,14 +144,21 @@ repeated as often as needed. Once the user has corrected all errors and the
 data is valid then your C<&on_valid_form> subroutine will be called so that
 you can process the valid data in any way you wish.
 
+Note that EXAMPLE #1 and EXAMPLE #2 are in this pod; C<example1>, C<example2>,
+etc. are supplied as files.
+
 =head2 QuickForm form-level (record-level) options
 
-C<-ACCEPT> Required subroutine reference. This is a reference to the
-subroutine to execute when the form is successfully completed, i.e. once all
-the fields and the whole record are valid (either because no validation was
-requested or because every validation subroutine called returned true). The
-parameters are accessible via C<CGI.pm>, so your C<&on_valid_form> may look
-something like this:
+=over
+
+=item C<-ACCEPT> 
+
+Required subroutine reference. This is a reference to the subroutine to
+execute when the form is successfully completed, i.e. once all the fields and
+the whole record are valid (either because no validation was requested or
+because every validation subroutine called returned true). The parameters are
+accessible via C<CGI.pm>, so your C<&on_valid_form> may look something like
+this:
 
     sub on_valid_form {
         my $first_param  = param( 'first' ) ;
@@ -160,13 +169,17 @@ something like this:
         # Give the user a thank you.
     }
 
-C<-BORDER> Optional integer. This is the border width. Default is zero. You
-would normally set this to 1 if you are using C<-DESC> to add textual
-descriptions to your fields.
+=item C<-BORDER> 
 
-C<-BUTTONS> Optional array reference. This is an array of submit buttons. The
-buttons appear at the bottom of the form, after all the fields. Each button is
-defined as an anonymous hash, e.g.
+Optional integer. This is the border width. Default is zero. You would
+normally set this to 1 if you are using C<-DESC> to add textual descriptions
+to your fields.
+
+=item C<-BUTTONS> 
+
+Optional array reference. This is an array of submit buttons. The buttons
+appear at the bottom of the form, after all the fields. Each button is defined
+as an anonymous hash, e.g.
 
     -BUTTONS    => [
         { -name => 'New'    },
@@ -200,21 +213,36 @@ pressed you might use code like this in your on_valid_form subroutine:
     }
     # etc.
 
-C<-CHECK> Optional boolean, default is true. When C<show_form> is called it
-will check (i.e. do validation) providing there are parameters (i.e. the user
-has filled in the form) I<and> if C<-CHECK> is true. This option would not
-normally be used. However if you have links which call your form with some
-parameters (e.g. default values), you will want the form to be displayed with
-the defaults but I<without> any validation taking place in the first instance.
-In this situation you would set C<-CHECK> to false. Thus we must cope with the
+=item C<-CHECK> 
+
+Optional boolean, default is true. When C<show_form> is called it will check
+(i.e. do validation) providing there are parameters (i.e. the user has filled
+in the form) I<and> if C<-CHECK> is true. This option would not normally be
+used. However if you have links which call your form with some parameters
+(e.g. default values), you will want the form to be displayed with the
+defaults but I<without> any validation taking place in the first instance. In
+this situation you would set C<-CHECK> to false. Thus we must cope with the
 following scenarios: 
-1. Form is called with no params - must display blank form and validate when
+
+=over
+
+=item 1. 
+
+Form is called with no params - must display blank form and validate when
 the user presses a button;
-2. Form is called with params (e.g. by clicking a link we've provided) - must
+
+=item 2. 
+
+Form is called with params (e.g. by clicking a link we've provided) - must
 display form with any defaults and I<not> validate until the user presses a
 button;
-3. Form is called with params (as the result of the user pressing a button) -
+
+=item 3. 
+
+Form is called with params (as the result of the user pressing a button) -
 validation must take place.
+
+=back
 
 To achieve the above we need to add an extra field=value pair to the URL we
 provide and if that is present then skip validation. The field's name must
@@ -250,9 +278,10 @@ to distinguish between a 'first time' call and subsequent calls as we do here
 with -CHECK. However if you want a query string parameter to survive these
 calls we must extract them and pass them ourselves, e.g. via a hidden field.
 
-C<-FOOTER> Optional string. This is used to present any text following the
-form and if used it must include everything up to and including final
-"</html>", e.g.:
+=item C<-FOOTER> 
+
+Optional string. This is used to present any text following the form and if
+used it must include everything up to and including final "</html>", e.g.:
 
     my $footer = p( "Thank's for your efforts." ) .
                  h6( "Copyright (c) 1999 Summer plc" ) . end_html ;
@@ -261,8 +290,10 @@ form and if used it must include everything up to and including final
         -FOOTER => $footer,
         # etc
 
-C<-HEADER> Optional string. This is used to present your own title and text
-before the form proper. If you use this it must include everything from
+=item C<-HEADER> 
+
+Optional string. This is used to present your own title and text before the
+form proper. If you use this it must include everything from 
 "Content-type: text/html" onwards. For example:
 
     my $header = header . start_html( "This is my Title" ) .
@@ -272,41 +303,74 @@ before the form proper. If you use this it must include everything from
         -HEADER => $header,
         # etc
 
-C<-INTRO> Optional string. If you specify C<-TITLE> you may want to specify
-this field too; it puts a paragraph of text before the form. The English
-default is "Please enter the information.", there is a default for each
-supported language (see C<-LANGUAGE>).
+=item C<-INTRO> 
 
-C<-LANGUAGE> Optional string. This option accepts 'en' (english), 'cy'
-(welsh), 'de' (german) and 'fr' (french) - the French translation
-was done by Babelfish - see CHANGES for the human translators. ('english' is
-also supported for backward compatibility.) If people provide me with
-translations I will add other languages. This is used for the presentation of
-messages to the user, e.g.:
+Optional string. If you specify C<-TITLE> you may want to specify this field
+too; it puts a paragraph of text before the form. The English default is
+"Please enter the information.", there is a default for each supported
+language (see C<-LANGUAGE>).
+
+=item C<-INVALID_HTML> 
+
+Optional HTML string. Default is:
+
+    <span style="font-weight:bold;color:RED">*</span>
+
+You can over-ride this to set your own marker to indicate an invalid field.
+You could use an image tag for example:
+
+    <img src="/images/invalid.jpg" alt="*" />
+
+See C<example1> and the companion option C<-REQUIRED_HTML>.
+
+=item C<-LANGUAGE> 
+
+Optional string. This option accepts 'en' (english), 'cy' (welsh), 'de'
+(german), 'es' (spanish) and 'fr' (french) - the French translation was done
+by Babelfish - see CHANGES for the human translators. ('english' is also
+supported for backward compatibility.) If people provide me with translations
+I will add other languages. This is used for the presentation of messages to
+the user, e.g.:
 
     Please enter the information.
     Fields marked with + are required.
     Fields marked with * contain errors or are empty.
 
-C<-MULTI_COLUMN> Optional boolean (default false). If false QuickForm behaves
-as it always has producing a two column table, the first column with field
-names and the second column with field values. If true QuickForm will put all
-field names and field values in the same row, except where you force a new row
-to be used by marking some fields with C<-END_ROW => 1,>. See the field-level
-options C<-START_ROW>, C<-END_ROW> and C<-COLSPAN>.
-See example2 and example4 which have been updated to demonstrate these options.
+See C<example1>.
 
-C<-TITLE> Required string (unless you use C<-HEADER>). This is used as the
-form's title and as a header on the form's page - unless you use the
-C<-HEADER> option (see above) in which case this option is ignored.
+=item C<-MULTI_COLUMN> 
 
-C<-VALIDATE> Optional subroutine reference. This routine is called after each
-individual field has been validated. It is given the fields in a name=>value
-hash. It should either return a simple true (valid) or false (invalid) or a
-two element list, the first element being a true/false value and the second
-value either an empty string or an (html) string which gives the reason why
-the record is invalid.
-Typically it may have this structure:
+Optional boolean (default false). If false QuickForm behaves as it always has
+producing a two column table, the first column with field names and the second
+column with field values. If true QuickForm will put all field names and field
+values in the same row, except where you force a new row to be used by marking
+some fields with C<-END_ROW => 1,>. See the field-level options C<-START_ROW>,
+C<-END_ROW> and C<-COLSPAN>. See C<example2> and C<example4> which have been updated
+to demonstrate these options.
+
+=item C<-REQUIRED_HTML> 
+
+Optional HTML string. Default is:
+
+    <span style="font-weight:bold;color:BLUE">+</span>
+
+You can over-ride this to set your own marker to indicate a required field.
+See C<example1> and the companion option C<-INVALID_HTML>.
+
+=item C<-TITLE> 
+
+Required string (unless you use C<-HEADER>). This is used as the form's title
+and as a header on the form's page - unless you use the C<-HEADER> option (see
+above) in which case this option is ignored.
+
+=item C<-VALIDATE> 
+
+Optional subroutine reference. This routine is called after each individual
+field has been validated. It is given the fields in a name=>value hash. It
+should either return a simple true (valid) or false (invalid) or a two element
+list, the first element being a true/false value and the second value either
+an empty string or an (html) string which gives the reason why the record is
+invalid. Typically it may have this structure:
 
     sub valid_record {
         my %field = @_ ;
@@ -341,18 +405,25 @@ invalid the C<$why> element will be shown near the top of the form just before
 the fields themselves, otherwise (i.e. if the record is valid) it will be
 ignored.
 
-C<-COLUMNS> Optional integer. If set then any C<-TYPE =E<gt> textarea> will
-have a C<-columns> set to this value unless an explicit C<-columns> is given.
+=item C<-COLUMNS> 
 
-C<-MAXLENGTH> Optional integer. If set then any C<-TYPE =E<gt> textfield> will
-have a C<-maxlength> set to this value unless an explicit C<-maxlength> is given.
+Optional integer. If set then any C<-TYPE =E<gt> textarea> will have a
+C<-columns> set to this value unless an explicit C<-columns> is given.
 
-C<-ROWS> Optional integer. If set then any C<-TYPE =E<gt> textarea> will
-have a C<-rows> set to this value unless an explicit C<-rows> is given.
+=item C<-MAXLENGTH> 
 
-C<-SIZE> Optional integer. If set then any C<-TYPE =E<gt> textfield> will
-have a C<-size> set to this value unless an explicit C<-size> is given. For
-example:
+Optional integer. If set then any C<-TYPE =E<gt> textfield> will have a
+C<-maxlength> set to this value unless an explicit C<-maxlength> is given.
+
+=item C<-ROWS> 
+
+Optional integer. If set then any C<-TYPE =E<gt> textarea> will have a
+C<-rows> set to this value unless an explicit C<-rows> is given.
+
+=item C<-SIZE> 
+
+Optional integer. If set then any C<-TYPE =E<gt> textfield> will have a
+C<-size> set to this value unless an explicit C<-size> is given. For example:
 
      show_form(
         -ACCEPT => \&on_valid_form, # You must supply this subroutine.
@@ -390,22 +461,33 @@ example:
     # 50 but Country will have a -size of 20. All three will have a -maxlength
     # of 70.
 
-C<-STYLE_*> These options apply globally and are documented under Styles
-later.
+=item C<-STYLE_*> 
 
-C<-SPACE> Optional integer. If true then QuickForm will output some newlines
-to help make the HTML more human readable for debugging; otherwise no
-additional whitespace is added. Defaults to false.
+These options apply globally and are documented under Styles later.
+
+=item C<-SPACE> 
+
+Optional integer. If true then QuickForm will output some newlines to help
+make the HTML more human readable for debugging; otherwise no additional
+whitespace is added. Defaults to false.
  
-C<-FIELDS> Required array reference. This is an array of hashes; there must
-be at least one. The fields are displayed in the order given. The options
-available in each field hash are covered in the next section.
+=item C<-FIELDS> 
+
+Required array reference. This is an array of hashes; there must be at least
+one. The fields are displayed in the order given. The options available in
+each field hash are covered in the next section.
+
+=back
 
 =head2 QuickForm field-level options
 
-C<-CLEAN> Optional subroutine reference. If specified this subroutines will be
-called for the relevant field if and only if the whole record is valid, i.e.
-just before calling your C<on_valid_form> subroutine. It will receive a single
+=over
+
+=item C<-CLEAN> 
+
+Optional subroutine reference. If specified this subroutines will be called
+for the relevant field if and only if the whole record is valid, i.e. just
+before calling your C<on_valid_form> subroutine. It will receive a single
 parameter (the value of the relevant param), and must return a new value. A
 typical routine might clean up excess whitespace, e.g.:
 
@@ -419,28 +501,33 @@ typical routine might clean up excess whitespace, e.g.:
         $_ ;
     }
 
-C<-COLSPAN> Optional integer. Default is 1; ignored if C<-MULTI_COLUMN> is
-false. If you choose C<-MULTI_COLUMN> and want some fields to span multiple
-rows then you can use this option to define how many rows are spanned. (Note
-that every field is two rows wide, one for the fieldname and one for the
-fieldvalue.)
+=item C<-COLSPAN> 
 
-C<-DESC> Optional string. This is a short piece of descriptive text which
-appears above the field and is used to give the user a little guidance on what
-they should choose or enter. Normally if you use these then you would set the
-form-level C<-BORDER> option to 1 to help visually group the field and its
-descriptive text.
+Optional integer. Default is 1; ignored if C<-MULTI_COLUMN> is false. If you
+choose C<-MULTI_COLUMN> and want some fields to span multiple rows then you
+can use this option to define how many rows are spanned. (Note that every
+field is two rows wide, one for the fieldname and one for the fieldvalue.)
 
-C<-HEADLINE> Optional boolean. Default is false. If set to true then instead
-of inserting a field, QuickForm will insert a label. This is used to separate
-blocks of input fields - see example2. If this is true then you will probably
-want to set C<-STYLE_FIELDNAME>, e.g. to make the text stand out; and also
-C<-COLSPAN> to the number of columns in the form if using C<-MULTI_COLUMN>.
-The C<-LABEL> is the text that will be displayed. If using C<-MULTI_COLUMN>
-any field that preceeds C<-HEADLINE> should normally set C<-END_ROW> to true;
-this isn't done automatically in case your form has two or more columns and
-you want to have different headlines above each column. Thus a typical
-headline field looks like:
+=item C<-DESC> 
+
+Optional string. This is a short piece of descriptive text which appears above
+the field and is used to give the user a little guidance on what they should
+choose or enter. Normally if you use these then you would set the form-level
+C<-BORDER> option to 1 to help visually group the field and its descriptive
+text.
+
+=item C<-HEADLINE> 
+
+Optional boolean. Default is false. If set to true then instead of inserting a
+field, QuickForm will insert a label. This is used to separate blocks of input
+fields - see C<example2>. If this is true then you will probably want to set
+C<-STYLE_FIELDNAME>, e.g. to make the text stand out; and also C<-COLSPAN> to
+the number of columns in the form if using C<-MULTI_COLUMN>. The C<-LABEL> is
+the text that will be displayed. If using C<-MULTI_COLUMN> any field that
+preceeds C<-HEADLINE> should normally set C<-END_ROW> to true; this isn't done
+automatically in case your form has two or more columns and you want to have
+different headlines above each column. Thus a typical headline field looks
+like:
 
     {
         -LABEL           => 'General Information',
@@ -451,37 +538,48 @@ headline field looks like:
 
     },
 
-C<-LABEL> Required string. This is the display label for the field. It is
-also used as the field's name if no C<-name> option is used.
+=item C<-LABEL> 
 
-C<-REQUIRED> Optional boolean. Default is false. If set to true the field
-must contain something. Should only be used with text fields. It is ignored if
-C<-VALIDATE> is given since C<-VALIDATE> overrides (see later).
+Required string. This is the display label for the field. It is also used as
+the field's name if no C<-name> option is used.
 
-C<-START_ROW> and C<-END_ROW> Optional booleans, default is true. These
-options are only relevant if the form-level C<-MULTI_COLUMN> option is set to
-true in which case these options are used to identify at which fields rows
-start and end. In practice C<-START_ROW> should never be needed; simply set
-C<-END_ROW => 1,> in each field which is to be the last field in a given row.
-Note that because some fields may need to span several columns e.g. a layout
-where say the first two fields are side-by-side and the following field is so
-wide it must take the whole width; the wider field's C<-COLSPAN>
-setting may need to be set to C<-COLSPAN => 3,> or similar. See example2 and
-example4 which have been updated to demonstrate these options.
+=item C<-REQUIRED> 
 
-C<-STYLE_*> Some of these options may be applied on a per-field basis; they
-are documented under Styles later.
+Optional boolean. Default is false. If set to true the field must contain
+something. Should only be used with text fields. It is ignored if C<-VALIDATE>
+is given since C<-VALIDATE> overrides (see later).
 
-C<-TYPE> Optional string. Default is C<textfield>. May be any field supported
-by C<CGI.pm>.
+=item C<-START_ROW> and C<-END_ROW> 
 
-C<-VALIDATE> Optional subroutine reference. If specified this subroutine will
-be called when the user presses the submit button; its argument will be the
-value of the field. It should either return a simple true (valid) or false
-(invalid) or a two element list, the first element being a true/false value
-and the second value either an empty string or an (html) string which gives
-the reason why the field is invalid.
-Its typical structure may be:
+Optional booleans, default is true. These options are only relevant if the
+form-level C<-MULTI_COLUMN> option is set to true in which case these options
+are used to identify at which fields rows start and end. In practice
+C<-START_ROW> should never be needed; simply set C<-END_ROW => 1,> in each
+field which is to be the last field in a given row. Note that because some
+fields may need to span several columns e.g. a layout where say the first two
+fields are side-by-side and the following field is so wide it must take the
+whole width; the wider field's C<-COLSPAN> setting may need to be set to
+C<-COLSPAN => 3,> or similar. See C<example2> and C<example4> which have been
+updated to demonstrate these options.
+
+=item C<-STYLE_*> 
+
+Some of these options may be applied on a per-field basis; they are documented
+under Styles later.
+
+=item C<-TYPE> 
+
+Optional string. Default is C<textfield>. May be any field supported by
+C<CGI.pm>.
+
+=item C<-VALIDATE> 
+
+Optional subroutine reference. If specified this subroutine will be called
+when the user presses the submit button; its argument will be the value of the
+field. It should either return a simple true (valid) or false (invalid) or a
+two element list, the first element being a true/false value and the second
+value either an empty string or an (html) string which gives the reason why
+the field is invalid. Its typical structure may be:
 
     sub valid_national_insurance {
         my $ni = shift ;
@@ -507,6 +605,8 @@ I<Both syntaxes work so no existing code need be changed.> If the field is
 invalid the C<$why> element will be shown immediately to the right of the
 field it refers to, otherwise (i.e. if the field is valid) it will be ignored.
 
+=back
+
 =head2 CGI.pm field-level options
 
 All the other options passed in the hash should be the lowercase options
@@ -523,7 +623,7 @@ the -HEADER option to include a <link> tag which includes a reference to your
 stylesheet.
 
 If you wish to use multiple columns see C<-MULTI_COLUMN>, C<-START_ROW>,
-C<-END_ROW> and C<-COLSPAN> as well as example2 and example4.
+C<-END_ROW> and C<-COLSPAN> as well as C<example2> and C<example4>.
 
 Whether you use a stylesheet for classes or in-line styles you can set the
 class or style using the -STYLE_* options, e.g.
@@ -564,7 +664,7 @@ styles in tables):
     -TABLE_OPTIONS    => qq{BGCOLOR="WHITE"},
 
 
-See files, example3 (linux-help) and example5 (bicycle) for more examples.
+See files, C<example3> (linux-help) and C<example5> (bicycle) for more examples.
 
 You can of course also apply your own global styles to the existing tags in
 the normal way.
@@ -733,24 +833,39 @@ without requiring any changes.
 If you want to use QuickForm under pure mod_perl, i.e. outside
 Apache::Registry they you need to do the following:
 
-1. Add the following lines at the beginning of your script:
+=over
+
+=item 1. 
+
+Add the following lines at the beginning of your script:
 
     require 'CGI/Apache.pm' ;
     use Apache::Constants qw( :common ) ;
 
-2. Ensure that any routines that return to mod_perl return OK. Normally this
-will be C<handler()> and C<on_valid_form()>. 
+=item 2. 
 
-3. Convert your script into a module by wrapping the C<show_form()> call in a
+Ensure that any routines that return to mod_perl return OK. Normally this will
+be C<handler()> and C<on_valid_form()>. 
+
+=item 3. 
+
+Convert your script into a module by wrapping the C<show_form()> call in a
 C<handler> subroutine etc.
 
-4. Copy the module into an Apache subdirectory in your C<@INC> path.
+=item 4. 
 
-5. Edit your Apache httpd.conf (or perl.conf) to add a Location for the
-module. 
+Copy the module into an Apache subdirectory in your C<@INC> path.
 
-6. If you are converting a script that uses C<url()> you may need to add the
-name of the script, e.g. C<url() . path_info()>. 
+=item 5. 
+
+Edit your Apache httpd.conf (or perl.conf) to add a Location for the module. 
+
+=item 6. 
+
+If you are converting a script that uses C<url()> you may need to add the name
+of the script, e.g. C<url() . path_info()>. 
+
+=back
 
 See C<example6> for a working example that covers all the points above.
 C<example6> also has notes at the beginning to explain how to set things up.
@@ -762,10 +877,20 @@ you run them under Apache::Registry.
 
 See http://www.perlpress.com/perl/quickform.html
 
+=head2 YOUR QUICKFORM URLs
+
+If you use QuickForm please let me know the URL and a short one line
+description so I can add it to the list at
+http://www.perlpress.com/perl/quickform-users.html
+
+Thanks!
+
 =head1 BUGS
 
 If you get messages like this under pure mod_perl:
+
     [error] Undefined subroutine &Apache::xxxxxxx::handler called.
+
 the problem is with your configuration I<not> QuickForm, and I won't be able
 to help you. Please see the copious and high quality documentation at
 L<http://perl.apache.org> for help with this problem.
@@ -781,6 +906,9 @@ the HTML shown by View Source (in case I can't run your script).
 
 Mark Summerfield. I can be contacted as <summer@perlpress.com> -
 please include the word 'quickform' in the subject line.
+
+Emails giving the URLs of the pages where you use QuickForm would be
+appreciated!
 
 See CHANGES for acknowledgements.
 

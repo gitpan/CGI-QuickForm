@@ -1,6 +1,6 @@
 #!/usr/bin/perl -Tw
 
-# $Id: bicycle,v 1.7 2000/04/08 10:54:35 root Exp root $
+# $Id: bicycle,v 1.8 2000/04/23 14:04:36 root Exp root $
 
 # Copyright (c) Mark Summerfield 1999-2000. All Rights Reserved.
 # May be used/distributed under the GPL.
@@ -11,15 +11,18 @@
 # You'll also need sunglasses...
 
 use strict ;
+
+use vars qw( $VERSION ) ; $VERSION = '0.1.0' ;
+
 use CGI qw( :standard :html3 ) ;
 use lib '.' ; # This is 'cos my host provider hasn't installed QuickForm!
 use CGI::QuickForm ;
 
-my $title = 'Bicycle Form' ;
+use readonly '$TITLE' => 'Bicycle Form' ;
 
 show_form(
-    -HEADER           => header . start_html( $title ) .
-                         h3( $title ) .
+    -HEADER           => header . start_html( $TITLE ) .
+                         h3( $TITLE ) .
                          p( 'This is a test form. ' .
                             'Any data entered is discarded.' ),
     -VALIDATE         => \&valid_form, # Form validation

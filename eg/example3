@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id: linux-help,v 1.21 2000/03/14 21:58:43 root Exp $
+# $Id: linux-help,v 1.22 2000/04/23 14:04:36 root Exp root $
 
 # Copyright (c) Mark Summerfield 1999-2000. All Rights Reserved.
 # May be used/distributed under the GPL.
@@ -34,7 +34,7 @@ use HTML::Entities ;
 use Storable qw( freeze thaw ) ;
 use URI::Escape ;
 
-use vars qw( $VERSION ) ; $VERSION = '1.04' ;
+use vars qw( $VERSION ) ; $VERSION = '1.06' ;
 
 use vars qw( $URL $PREDEFINED_PAGES ) ;
 
@@ -42,39 +42,42 @@ use vars qw( $URL $PREDEFINED_PAGES ) ;
 
 # This is the db file where linux-help stores its configuration info - it must
 # be rw by linux-help running as a CGI script.
-my $DB_FILE   = '/root/web/db/linux-help.db' ;
-
+use readonly
+        '$DB_FILE'   => '/root/web/db/linux-help.db',
 # Change these to reflect your local situation; multiple paths are supported
 # separated by colons in the usual way.
-my $PATH_DOC  = "/usr/doc" ;
-my $PATH_INFO = "/usr/info" ;
-my $PATH_MAN  = "/usr/man:/usr/X11R6/man" ;
-my $PATH_POD  = "/usr/doc/perl5:/usr/doc:/usr/lib/perl5:/root/lib" ;
-
+        '$PATH_DOC'  => "/usr/doc",
+        '$PATH_INFO' => "/usr/info",
+        '$PATH_MAN'  => "/usr/man:/usr/X11R6/man",
+        '$PATH_POD'  => "/usr/doc/perl5:/usr/doc:/usr/lib/perl5:/root/lib",
 # This must be rw by this script.
-my $TMP       = '/tmp' ;
+        '$TMP'       => '/tmp',
+        ;
+
 
 ################### END OF LOCAL CHANGES ############################
 
 $| = 1 ; # Autoflush.
 
-my $TITLE        = 'Linux Help' ;
-my $SEARCH       = 'Search' ;
-my $NEW_SEARCH   = 'New Search' ;
-my $NEW_TERM     = 'New Term' ;
-my $PREV_TERM    = 'Prev Term' ;
-my $PREV_PAGE    = 'Prev Page' ;
-my $NEW_KEYWORD  = 'New Keyword' ;
-my $SEARCH_PAGES = 'Search Pages' ;
-my $SEARCH_FOR   = 'Search/Show' ;
-my $IGNORE_CASE  = 'Ignore Case' ;
-my $DEL_PAGE     = 'Del Page' ;
-my $DEL_PAGES    = 'Del Pages' ;
-my $DEL_TERM     = 'Del Term' ;
-my $DEL_TERMS    = 'Del Terms' ;
-my $PREFIX       = "\x01" ;
-my $SEARCH_TERMS = "$PREFIX SEARCH_TERMS" ;
-my $SHOWN        = "$PREFIX SHOWN" ;
+use readonly
+        '$TITLE'        => 'Linux Help',
+        '$SEARCH'       => 'Search',
+        '$NEW_SEARCH'   => 'New Search',
+        '$NEW_TERM'     => 'New Term',
+        '$PREV_TERM'    => 'Prev Term',
+        '$PREV_PAGE'    => 'Prev Page',
+        '$NEW_KEYWORD'  => 'New Keyword',
+        '$SEARCH_PAGES' => 'Search Pages',
+        '$SEARCH_FOR'   => 'Search/Show',
+        '$IGNORE_CASE'  => 'Ignore Case',
+        '$DEL_PAGE'     => 'Del Page',
+        '$DEL_PAGES'    => 'Del Pages',
+        '$DEL_TERM'     => 'Del Term',
+        '$DEL_TERMS'    => 'Del Terms',
+        '$PREFIX'       => "\x01",
+        '$SEARCH_TERMS' => "\x01 SEARCH_TERMS",
+        '$SHOWN'        => "\x01 SHOWN",
+        ;
 
 my %Data ;
 my %Show ;
