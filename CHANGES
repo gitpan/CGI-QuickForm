@@ -1,3 +1,9 @@
+1999/11/24
+
+Added new -LANGUAGE option, 'cy' welsh. Thanks to Catherine Dixon and Ed
+Bradburn.
+
+
 1999/11/23
 
 Added ability to create a button which resets the form to its default values.

@@ -267,11 +267,11 @@ before the form proper. If you use this it must include everything from
         -HEADER => $header,
         # etc
 
-C<-LANGUAGE> Optional string. This option accepts 'en' (english), 'de'
-(german) and 'fr' (french) - the translations were done by Babelfish.
-('english' is also supported for backward compatibility.) If people provide me
-with translations I will add other languages. This is used for the
-presentation of messages to the user, e.g.:
+C<-LANGUAGE> Optional string. This option accepts 'en' (english), 'cy'
+(welsh), 'de' (german) and 'fr' (french) - the French and German translations
+were done by Babelfish. ('english' is also supported for backward
+compatibility.) If people provide me with translations I will add other
+languages. This is used for the presentation of messages to the user, e.g.:
 
     Please enter the information.
     Fields marked with + are required.

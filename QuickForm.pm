@@ -1,6 +1,6 @@
 package CGI::QuickForm ; # Documented at the __END__.
 
-# $Id: QuickForm.pm,v 1.22 1999/11/23 22:34:43 root Exp root $
+# $Id: QuickForm.pm,v 1.23 1999/11/25 18:52:28 root Exp root $
 
 require 5.004 ;
 
@@ -15,7 +15,7 @@ use vars qw(
             %Translate 
             ) ;
 
-$VERSION   = '1.55' ; 
+$VERSION   = '1.56' ; 
 
 use Exporter() ;
 
@@ -27,7 +27,8 @@ use Exporter() ;
 # &colour is not documented because at some point it may be moved elsewhere.
 @EXPORT_OK = qw( colour color ) ;
 *color = \&colour ;
-sub colour { qq{<FONT COLOR="$_[0]">$_[1]</FONT>} }
+#sub colour { qq{<FONT COLOR="$_[0]">$_[1]</FONT>} }
+sub colour { qq{<SPAN style="color:$_[0]">$_[1]</SPAN>} }
 
 
 my %Record ;
@@ -237,10 +238,19 @@ sub _on_valid_form {
 
 BEGIN {
 
-    $REQUIRED = '<B><FONT COLOR="BLUE">+</FONT></B>' ;
-    $INVALID  = '<B><FONT COLOR="RED">*</FONT></B>' ;
+    $REQUIRED = '<SPAN style="font-weight:bold;color:BLUE">+</SPAN>' ;
+    $INVALID  = '<SPAN style="font-weight:bold;color:RED">*</SPAN>' ;
+#    $REQUIRED = '<B><FONT COLOR="BLUE">+</FONT></B>' ;
+#    $INVALID  = '<B><FONT COLOR="RED">*</FONT></B>' ;
 
     %Translate = (
+         'cy' => {
+            -INTRO    => "Cofnodwch y wybodaeth.",
+            -REQUIRED => "Mae angen llenwi'r adrannau sydd wedi eu clustnodi " .
+                         "gyda $REQUIRED.",
+            -INVALID  => "Mae'r adrannau sydd wedi eu clustnodi gyda $INVALID " .
+                         "yn cynnwys camgymeriadau neu yn wag.",
+            },
         'de' => {
             -INTRO    => "Tragen Sie bitte die Informationen ein.",
             -REQUIRED => "Die Dateneingabe Felder, die mit $REQUIRED " .
@@ -541,11 +551,11 @@ before the form proper. If you use this it must include everything from
         -HEADER => $header,
         # etc
 
-C<-LANGUAGE> Optional string. This option accepts 'en' (english), 'de'
-(german) and 'fr' (french) - the translations were done by Babelfish.
-('english' is also supported for backward compatibility.) If people provide me
-with translations I will add other languages. This is used for the
-presentation of messages to the user, e.g.:
+C<-LANGUAGE> Optional string. This option accepts 'en' (english), 'cy'
+(welsh), 'de' (german) and 'fr' (french) - the French and German translations
+were done by Babelfish. ('english' is also supported for backward
+compatibility.) If people provide me with translations I will add other
+languages. This is used for the presentation of messages to the user, e.g.:
 
     Please enter the information.
     Fields marked with + are required.
