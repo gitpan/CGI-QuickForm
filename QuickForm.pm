@@ -1,6 +1,6 @@
 package CGI::QuickForm ; # Documented at the __END__.
 
-# $Id: QuickForm.pm,v 1.15 1999/10/03 10:32:45 root Exp root $
+# $Id: QuickForm.pm,v 1.16 1999/10/16 14:13:18 root Exp $
 
 require 5.004 ;
 
@@ -15,7 +15,7 @@ use vars qw(
             %Translate 
             ) ;
 
-$VERSION   = '1.50' ; 
+$VERSION   = '1.51' ; 
 
 use Exporter() ;
 
@@ -45,6 +45,7 @@ sub show_form {
         -MAXLENGTH   => undef,
         -ROWS        => undef,
         -COLUMNS     => undef,
+        -CHECK       => 1,
         -FIELDS      => [ { -LABEL => 'No Fields Specified' } ],
         -BUTTONS     => [ { -name  => 'Submit' } ], # Default button
         @_,
@@ -75,16 +76,16 @@ sub show_form {
         }
         elsif( $Record{-FIELDS}[$i]{-TYPE} eq 'textarea' ) { 
             if( $Record{-ROWS} and not $field{-rows} ) {
-                $Record{-FIELDS}[$i]{-rows}    = $Record{-ROWS} ;
+                $Record{-FIELDS}[$i]{-rows}      = $Record{-ROWS} ;
             }
             if( $Record{-COLUMNS} and not $field{-columns} ) {
-                $Record{-FIELDS}[$i]{-columns} = $Record{-COLUMNS} ;
+                $Record{-FIELDS}[$i]{-columns}   = $Record{-COLUMNS} ;
             }
         }
         $i++ ;
     }
 
-    if( param() ) {
+    if( $Record{-CHECK} and param() ) {
         &_check_form ;
     }
     else {
@@ -302,6 +303,7 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
         -MAXLENGTH   => undef,
         -ROWS        => undef,
         -COLUMNS     => undef,
+        -CHECK       => 1,
         -FIELDS      => [            
             { 
                 -LABEL     => 'Name', 
@@ -427,6 +429,50 @@ C<{ -name =E<lt> 'Submit' }> by default. Note that this option replaces the
 C<-BUTTONLABEL> option. If C<-BUTTONLABEL> is used it will be converted into
 the new form automatically so old scripts will I<not> be broken. However use
 of C<-BUTTONS> is recommended for all new work.
+
+C<-CHECK> Optional boolean, default is true. When C<show_form> is called it
+will check (i.e. do validation) providing there are parameters (i.e. the user
+has filled in the form) I<and> if C<-CHECK> is true. This option would not
+normally be used. However if you have links which call your form with some
+parameters (e.g. default values), you will want the form to be displayed with
+the defaults but I<without> any validation taking place in the first instance.
+In this situation you would set C<-CHECK> to false. Thus we must cope with the
+following scenarios: 
+1. Form is called with no params - must display blank form and validate when
+the user presses a button;
+2. Form is called with params (e.g. by clicking a link we've provided) - must
+display form with any defaults and I<not> validate until the user presses a
+button;
+3. Form is called with params (as the result of the user pressing a button) -
+validation must take place.
+
+To achieve the above we need to add an extra field=value pair to the URL we
+provide and if that is present then skip validation. The field's name must
+I<not> be one of the form's fields! e.g.
+
+    # If it is to be called from one of our own URLs with something like
+    # www.mysite.com/cgi-bin/myscript?colour=green&size=large
+    # then we must add in the extra field=value and write the preceeding link
+    # for example as:
+    # www.mysite.com/cgi-bin/myscript?QFCHK=0&colour=green&size=large 
+    # We then use query_string() to set -CHECK to 0 and show the form with the
+    # defaults without validating - we'll validate when they press a button. 
+    # If its been called as something like www.mysite.com/cgi-bin/myscript
+    # then set -CHECK to 1 which gives us standard behaviour:
+    # i.e. if there are params then show_form will validate; otherwise it will
+    # show the blank form.
+    show_form(
+        -CHECK => ( query_string() =~ /QFCHK=0/o ? 0 : 1 ), 
+        # etc
+        ) ;
+
+    # Or more verbosely:
+    my $Check = 1 ;
+    $Check    = 0 if query_string() =~ /QFCHK=0/o ; 
+    show_form(
+        -CHECK => $Check,
+        # etc
+        ) ;
 
 C<-FOOTER> Optional string. This is used to present any text following the
 form and if used it must include everything up to and including final

@@ -1,0 +1,143 @@
+#!/usr/bin/perl -Tw
+
+# $Id: quickform,v 1.8 1999/10/16 14:36:38 root Exp root $
+
+# Copyright (c) Mark Summerfield 1999. All Rights Reserved.
+# May be used/distributed under the GPL.
+
+# WARNING - this program is provided as an example of QuickForm use and not as
+# an example of production quality CGI code - it is not secure. 
+
+use strict ;
+
+use CGI qw( :standard :html3 ) ;
+use CGI::QuickForm qw( show_form colour ) ;
+
+
+show_form(
+    -CHECK    => ( query_string() =~ /QFCHK=0/o ? 0 : 1 ), 
+    -FOOTER   => qq{<A HREF="} . 
+                 url() . 
+                 qq{?QFCHK=0\&Age=28\&Surname=Bloggs\&Forename=Freda">} .
+                 qq{Defaults</A>} . 
+                 end_html,
+#    -LANGUAGE => 'de',
+    -BUTTONS  => [ { -name => 'Add' }, { -name => 'Del' } ],
+    -TITLE    => 'Test Form',
+    -ACCEPT   => \&on_valid_form, 
+    -SIZE     => 40,
+    -VALIDATE => sub { ( int rand(2), "<P>" . colour( 'RED', 'Randomly Invalid' ) ) },
+    -FIELDS   => [
+        {
+            -LABEL    => 'Forename',
+            -CLEAN    => \&cleanup, 
+            -VALIDATE => sub { 
+                            my $valid = length shift > 3 ; 
+                            ( $valid, '<I>Name too short</I>' ) ;
+                        }
+        },
+        {
+            -LABEL    => 'Surname',
+            -CLEAN    => \&cleanup, 
+            -REQUIRED => 1,
+            -VALIDATE => sub { 
+                            my $valid = length shift > 3 ; 
+                            ( $valid, '<I>Name too short</I>' ) ;
+                        }
+        },
+        {
+            -LABEL    => 'Age',
+            -VALIDATE => &mk_valid_number( 3, 130 ), 
+            -size     => 10,
+        },
+        { 
+            -LABEL     => 'Address', 
+            -REQUIRED  => undef,
+            -TYPE      => 'textarea',
+            -VALIDATE  => undef,
+            -name      => undef, # Defaults to -LABEL's value.
+            -default   => undef,
+            -rows      => 3,
+            -columns   => 40,
+        },
+        {
+            -LABEL => 'Sex',
+            -TYPE  => 'radio_group',
+            '-values' => [ qw( Female Male ) ],
+        },
+        { 
+            -LABEL     => 'Password', 
+            -REQUIRED  => undef,
+            -TYPE      => 'password_field',
+            -VALIDATE  => undef,
+            -name      => undef, # Defaults to -LABEL's value.
+            -value     => undef,
+            -size      => 10,
+            -maxlength => undef,
+        },
+        { 
+            -LABEL     => 'Hair colour', 
+            -REQUIRED  => undef,
+            -TYPE      => 'scrolling_list',
+            -VALIDATE  => undef,
+            -name      => undef, # Defaults to -LABEL's value.
+            '-values'  => [ qw( Red Black Brown Grey White ) ],
+            -size      => 1,
+            -multiples => undef,
+        },
+        { 
+            -LABEL     => 'Worst Sport', 
+            -REQUIRED  => undef,
+            -TYPE      => 'radio_group',
+            -VALIDATE  => undef,
+            -name      => undef, # Defaults to -LABEL's value.
+            '-values'  => [ qw( Boxing Cricket Golf ) ], 
+            -default   => 'Golf',
+            -size      => undef,
+            -multiples => undef,
+        },
+    ],
+) ;
+
+
+sub cleanup {
+    local $_ = shift ; # This is the value of param( <fieldname> )
+
+    tr/\t \n\r\f/ /s ; # Convert multiple whitespace to one space.
+    s/^\s*//o ; # Remove leading whitespace.
+    s/\s*$//o ; # Remove trailing whitespace.
+
+    $_ ;
+}
+
+
+sub on_valid_form {
+
+    my @keys = param ;
+
+    # Process the data in some way, e.g. save it to a file or database.
+
+    print
+        header,
+        start_html( 'Test Form Data Accepted' ),
+        h3( 'Test Form Data Accepted' ),
+        p( "Thank you ", param( 'Forename' ), " for your data." ),
+        ;
+    print qq{<TABLE BORDER="0">} ;
+    local $_ ;
+    foreach( @keys ) {
+        print "<TR><TD>$_</TD><TD>", param( $_ ), "</TD></TR>" ;
+    }
+    print "</TABLE><P><HR>" ;
+}
+
+
+sub mk_valid_number {
+    my( $min, $max ) = @_ ;
+
+    sub { 
+        my $valid = $_[0] ? ( $min <= $_[0] and $_[0] <= $max ) : 1 ;
+        ( $valid, "<I>Number should be between $min and $max inclusive</I>" ) ;
+    } ;
+}
+

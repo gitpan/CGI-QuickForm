@@ -1,0 +1,79 @@
+#!/usr/bin/perl -w
+
+# $Id: quickemailform,v 1.4 1999/10/16 14:36:38 root Exp root $
+
+# Copyright (c) Mark Summerfield 1999. All Rights Reserved.
+# May be used/distributed under the GPL.
+
+# WARNING - this program is provided as an example of QuickForm use and not as
+# an example of production quality CGI code - it is not secure. 
+
+use strict ;
+
+use CGI qw( :standard :html3 ) ;
+use CGI::QuickForm ;
+
+show_form(
+    -TITLE  => 'Test Form',
+    -ACCEPT => \&on_valid_form, 
+    -FIELDS => [
+        {
+            -LABEL    => 'Forename',
+        },
+        {
+            -LABEL    => 'Surname',
+            -REQUIRED => 1,
+        },
+        {
+            -LABEL    => 'Age',
+            -VALIDATE => &mk_valid_number( 3, 130 ), 
+        },
+    ],
+) ;
+
+
+sub on_valid_form {
+
+    my $forename = param( 'Forename' ) ;
+    my $surname  = param( 'Surname' ) ;
+    my $age      = param( 'Age' ) ;
+
+    eval {
+        open MAIL, "|/usr/lib/sendmail -t" or 
+        die "Failed to pipe to sendmail: $!\n" ;
+        print MAIL <<__EOT__ ;
+From: test\@localhost
+To: root\@localhost
+Subject: Quick Email Form Test
+
+Forename: $forename
+Surname:  $surname
+Age:      $age
+__EOT__
+    } ;
+    if( $@ ) {
+        print
+            header,
+            start_html( 'Test Form Data Error' ),
+            p( 'Unfortunately an error occurred' ),
+            p( $@ ),
+            ;
+    }
+    else {
+        print
+            header,
+            start_html( 'Test Form Data Accepted' ),
+            h3( 'Test Form Data Accepted' ),
+            p( "Thank you $forename for your data." ),
+            ;
+    }
+    print end_html ;
+}
+
+sub mk_valid_number {
+    my( $min, $max ) = @_ ;
+
+    sub { not $_[0] or ( $min <= $_[0] and $_[0] <= $max ) } ;
+}
+
+
