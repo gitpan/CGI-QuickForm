@@ -1,6 +1,6 @@
 #!/usr/bin/perl -Tw
 
-# $Id: bicycle,v 1.6 2000/04/06 22:02:55 root Exp root $
+# $Id: bicycle,v 1.7 2000/04/08 10:54:35 root Exp root $
 
 # Copyright (c) Mark Summerfield 1999-2000. All Rights Reserved.
 # May be used/distributed under the GPL.
@@ -102,6 +102,7 @@ sub on_valid_form {
     print header, start_html( 'Bicycle Form' ), h3( 'Bicycle Form' ),
           p( "Thank you $forename for your data, you chose $gears gears ",
           "and $speeds speeds." ), 
+          qq{<a href="/perl/quickform.html#examples">QuickForm examples</a>},
           end_html ;
 }
 

@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id: quickemailform,v 1.6 2000/04/06 22:02:55 root Exp root $
+# $Id: quickemailform,v 1.8 2000/04/08 11:07:16 root Exp root $
 
 # Copyright (c) Mark Summerfield 1999-2000. All Rights Reserved.
 # May be used/distributed under the GPL.
@@ -40,6 +40,7 @@ sub on_valid_form {
     my $surname  = param( 'Surname' ) ;
     my $age      = param( 'Age' ) ;
 
+=pod Commented out
     eval {
         open MAIL, "|/usr/lib/sendmail -t" or 
         die "Failed to pipe to sendmail: $!\n" ;
@@ -53,6 +54,7 @@ Surname:  $surname
 Age:      $age
 __EOT__
     } ;
+=cut
     if( $@ ) {
         print
             header,
@@ -69,7 +71,9 @@ __EOT__
             p( "Thank you $forename for your data." ),
             ;
     }
-    print end_html ;
+    print
+        qq{<a href="/perl/quickform.html#examples">QuickForm examples</a>},
+        end_html ;
 }
 
 sub mk_valid_number {

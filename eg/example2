@@ -1,6 +1,6 @@
 #!/usr/bin/perl -Tw
 
-# $Id: quickform,v 1.10 2000/04/06 22:02:55 root Exp root $
+# $Id: quickform,v 1.12 2000/04/08 11:32:05 root Exp $
 
 # Copyright (c) Mark Summerfield 1999-2000. All Rights Reserved.
 # May be used/distributed under the GPL.
@@ -13,7 +13,7 @@ use strict ;
 use CGI qw( :standard :html3 ) ;
 use CGI::QuickForm qw( show_form colour ) ;
 
-my $STYLE_FIELDVALUE = 'style="background-color:#DDDDDD"' ;
+my $STYLE_HEADLINE   = 'style="background-color:black;color:white;font-weight:bold"' ;
 
 show_form(
     -MULTI_COLUMN     => 1, # MULTI_COLUMN
@@ -30,11 +30,18 @@ show_form(
     -BUTTONS          => [ { -name => 'Add' }, { -name => 'Del' } ],
     -STYLE_BUTTONS    => 'center',
     -STYLE_FIELDNAME  => 'style="background-color:#AAAAAA"',
-    -STYLE_FIELDVALUE => $STYLE_FIELDVALUE,
+    -STYLE_FIELDVALUE => 'style="background-color:#DDDDDD"', 
     -STYLE_WHY        => 'style="font-style:italic;color:red"',
     -STYLE_DESC       => 'style="color:darkblue"',
     -VALIDATE  => sub { ( int rand(2), "<P>" . colour( 'RED', 'Randomly Invalid' ) ) },
     -FIELDS           => [
+        {
+            -LABEL           => 'Personal Information',
+            -END_ROW         => 1,
+            -HEADLINE        => 1,
+            -STYLE_FIELDNAME => $STYLE_HEADLINE,
+            -COLSPAN         => 4,
+        },
         {
             -LABEL      => 'Forename',
             -CLEAN      => \&cleanup, 
@@ -85,10 +92,17 @@ show_form(
             -size      => 10,
             -maxlength => undef,
         },
+        {
+            -LABEL           => 'Miscellaneous Information',
+            -END_ROW         => 1,
+            -HEADLINE        => 1,
+            -STYLE_FIELDNAME => $STYLE_HEADLINE,
+            -COLSPAN         => 4,
+        },
         { 
             -LABEL     => 'Address', 
             -END_ROW   => 1,
-            -STYLE_FIELDVALUE => qq{$STYLE_FIELDVALUE colspan="3"}, # MULTI_COLUMN
+            -COLSPAN   => 3, # MULTI_COLUMN
             -REQUIRED  => undef,
             -TYPE      => 'textarea',
             -VALIDATE  => undef,
@@ -101,7 +115,7 @@ show_form(
             -LABEL     => 'Worst Sport', 
             -REQUIRED  => undef,
             -TYPE      => 'radio_group',
-            -STYLE_FIELDVALUE => qq{$STYLE_FIELDVALUE colspan="3"}, # MULTI_COLUMN
+            -COLSPAN   => 3, # MULTI_COLUMN
             -VALIDATE  => undef,
             -name      => undef, # Defaults to -LABEL's value.
             '-values'  => [ qw( Boxing Cricket Golf ) ], 
@@ -136,12 +150,14 @@ sub on_valid_form {
         h3( 'Test Form Data Accepted' ),
         p( "Thank you ", param( 'Forename' ), " for your data." ),
         ;
-    print qq{<table border="0">} ;
+    print qq{<table border="1" cellspacing="0">} ;
     local $_ ;
     foreach( @keys ) {
         print "<tr><td>$_</td><td>", param( $_ ), "</td></tr>" ;
     }
-    print "</table><p /><hr />" ;
+    print "</table><p /><hr />" ,
+          qq{<a href="/perl/quickform.html#examples">QuickForm examples</a>},
+          end_html ;
 }
 
 

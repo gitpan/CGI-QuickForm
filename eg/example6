@@ -1,6 +1,6 @@
 package Apache::QuickTest ;
 
-# $Id: QuickTest.pm,v 1.2 2000/04/06 22:09:10 root Exp root $
+# $Id: QuickTest.pm,v 1.3 2000/04/08 11:19:43 root Exp root $
 
 # Copyright (c) Mark Summerfield 2000. All Rights Reserved.
 # 
@@ -64,6 +64,7 @@ use CGI qw( :standard :html3 ) ;
 use CGI::QuickForm qw( show_form colour ) ;
 
 my $STYLE_FIELDVALUE = 'style="background-color:#DDDDDD"' ;
+my $STYLE_HEADLINE   = 'style="background-color:black;color:white;font-weight:bold"' ;
 
 sub handler { # ADDED FOR MOD_PERL
 
@@ -88,6 +89,13 @@ sub handler { # ADDED FOR MOD_PERL
         -VALIDATE         => sub { 
                 ( int rand(2), "<P>" . colour( 'RED', 'Randomly Invalid' ) ) },
         -FIELDS     => [
+            {
+                -LABEL           => 'Personal Information',
+                -END_ROW         => 1,
+                -HEADLINE        => 1,
+                -STYLE_FIELDNAME => $STYLE_HEADLINE,
+                -COLSPAN         => 4,
+            },
             {
                 -LABEL    => 'Forename',
                 -CLEAN    => \&cleanup, 
@@ -137,6 +145,13 @@ sub handler { # ADDED FOR MOD_PERL
                 -value     => undef,
                 -size      => 10,
                 -maxlength => undef,
+            },
+            {
+                -LABEL           => 'Miscellaneous Information',
+                -END_ROW         => 1,
+                -HEADLINE        => 1,
+                -STYLE_FIELDNAME => $STYLE_HEADLINE,
+                -COLSPAN         => 4,
             },
             { 
                 -LABEL     => 'Address', 
@@ -192,12 +207,14 @@ sub on_valid_form {
         h3( 'Test Form Data Accepted' ),
         p( "Thank you ", param( 'Forename' ), " for your data." ),
         ;
-    print qq{<table border="0">} ;
+    print qq{<table border="1" cellspacing="0">} ;
     local $_ ;
     foreach( @keys ) {
         print "<tr><td>$_</td><td>", param( $_ ), "</td></tr>" ;
     }
-    print "</table><p /><hr />" ;
+    print "</table><p /><hr />" ,
+          qq{<a href="/perl/quickform.html#examples">QuickForm examples</a>},
+          end_html ;
 
     OK ;    # ADDED FOR MOD_PERL
 }

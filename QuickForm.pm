@@ -1,6 +1,6 @@
 package CGI::QuickForm ; # Documented at the __END__.
 
-# $Id: QuickForm.pm,v 1.50 2000/04/06 22:25:57 root Exp root $
+# $Id: QuickForm.pm,v 1.53 2000/04/08 11:34:38 root Exp $
 
 require 5.004 ;
 
@@ -15,7 +15,7 @@ use vars qw(
             %Translate 
             ) ;
 
-$VERSION   = '1.80' ; 
+$VERSION   = '1.81' ; 
 
 use Exporter() ;
 
@@ -82,6 +82,10 @@ sub show_form {
             my $value = $form{-FIELDS}[$i]{"-STYLE_$style"} || $form{"-STYLE_$style"} ;
             $form{-FIELDS}[$i]{"-STYLE_$style"} = $value ? " $value" : '' ;
         }
+        $form{-FIELDS}[$i]{-STYLE_FIELDVALUE} .= 
+            qq{ colspan="$form{-FIELDS}[$i]{-COLSPAN}"} 
+            if $form{-FIELDS}[$i]{-COLSPAN} and $form{-MULTI_COLUMN} ; 
+
         $form{-FIELDS}[$i]{-LABEL} = $fieldref->{-name}  unless $fieldref->{-LABEL} ;
         $form{-FIELDS}[$i]{-name}  = $fieldref->{-LABEL} unless $fieldref->{-name} ;
         $form{-FIELDS}[$i]{-TYPE}  = 'textfield'         unless $fieldref->{-TYPE} ;
@@ -224,18 +228,25 @@ sub _show_form {
         my $valuestyle = delete $field{-STYLE_FIELDVALUE} ;
         my $descstyle  = delete $field{-STYLE_DESC} ;
         my $endrow     = delete $field{-END_ROW} ;
+        if( $field{-HEADLINE} ) {
+            $field{-COLSPAN} ||= 2 ;
+            $namestyle .= qq{ colspan="$field{-COLSPAN}"} ;
+        }
         print qq{<tr$rowstyle>$n} if delete $field{-START_ROW} ;
-        print qq{<td$namestyle>$field{-LABEL}$required$invalid} .
-              qq{</td>$n<td$valuestyle>} ;
-        print "<span$descstyle>$field{-DESC}</span><br />" if $field{-DESC} ;
-        delete @field{-LABEL,-VALIDATE,-CLEAN,-SIZE,-MAXLENGTH,-ROWS,-COLUMNS} ;
-        no strict "refs" ;
-        local $^W = 0 ; # Switch off moans about undefined values.
-        print &{$type}( %field ) ; 
-        # Prefer to say why immediately after the field rather than in a
-        # separate column.
-        print " $why" if $invalid and defined $why ;
-        print "</td>$n" ;
+        print qq{<td$namestyle>$field{-LABEL}$required$invalid</td>$n} ;
+        unless( $field{-HEADLINE} ) {
+            print qq{<td$valuestyle>} ;
+            print "<span$descstyle>$field{-DESC}</span><br />" if $field{-DESC} ;
+            delete @field{-LABEL,-VALIDATE,-CLEAN,-SIZE,-MAXLENGTH,
+                          -ROWS,-COLUMNS,-COLSPAN} ;
+            no strict "refs" ;
+            local $^W = 0 ; # Switch off moans about undefined values.
+            print &{$type}( %field ) ; 
+            # Prefer to say why immediately after the field rather than in a
+            # separate column.
+            print " $why" if $invalid and defined $why ;
+            print "</td>$n" ;
+        }
         print "</tr>$n" if $endrow ;
     }
 
@@ -399,10 +410,18 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
         -STYLE_WHY        => '',
         -TABLE_OPTIONS    => '',
         -FIELDS           => [            
+            {
+                -LABEL            => 'Personal Details',
+                -HEADLINE         => 1,
+                -STYLE_FIELDNAME  => '',
+                -COLSPAN          => 2,
+                -END_ROW          => 1,
+            },
             { 
                 -LABEL            => 'Name', 
                 -START_ROW        => 1,
                 -END_ROW          => 1,
+                -COLSPAN          => 1,
                 -REQUIRED         => undef,
                 -TYPE             => 'textfield',
                 -VALIDATE         => undef, # Set this to validate the field
@@ -622,7 +641,7 @@ as it always has producing a two column table, the first column with field
 names and the second column with field values. If true QuickForm will put all
 field names and field values in the same row, except where you force a new row
 to be used by marking some fields with C<-END_ROW => 1,>. See the field-level
-options C<-START_ROW> and C<-END_ROW>.
+options C<-START_ROW>, C<-END_ROW> and C<-COLSPAN>.
 See example2 and example4 which have been updated to demonstrate these options.
 
 C<-TITLE> Required string (unless you use C<-HEADER>). This is used as the
@@ -748,11 +767,37 @@ typical routine might clean up excess whitespace, e.g.:
         $_ ;
     }
 
+C<-COLSPAN> Optional integer. Default is 1; ignored if C<-MULTI_COLUMN> is
+false. If you choose C<-MULTI_COLUMN> and want some fields to span multiple
+rows then you can use this option to define how many rows are spanned. (Note
+that every field is two rows wide, one for the fieldname and one for the
+fieldvalue.)
+
 C<-DESC> Optional string. This is a short piece of descriptive text which
 appears above the field and is used to give the user a little guidance on what
 they should choose or enter. Normally if you use these then you would set the
 form-level C<-BORDER> option to 1 to help visually group the field and its
 descriptive text.
+
+C<-HEADLINE> Optional boolean. Default is false. If set to true then instead
+of inserting a field, QuickForm will insert a label. This is used to separate
+blocks of input fields - see example2. If this is true then you will probably
+want to set C<-STYLE_FIELDNAME>, e.g. to make the text stand out; and also
+C<-COLSPAN> to the number of columns in the form if using C<-MULTI_COLUMN>.
+The C<-LABEL> is the text that will be displayed. If using C<-MULTI_COLUMN>
+any field that preceeds C<-HEADLINE> should normally set C<-END_ROW> to true;
+this isn't done automatically in case your form has two or more columns and
+you want to have different headlines above each column. Thus a typical
+headline field looks like:
+
+    {
+        -LABEL           => 'General Information',
+        -HEADLINE        => 1,
+        -COLSPAN         => 2, # Probably needs to be more for -MULTI_COLUMN
+        -END_ROW         => 1,
+        -STYLE_FIELDNAME => 'style="background-color:black;color:white;font-weight:bold"', 
+
+    },
 
 C<-LABEL> Required string. This is the display label for the field. It is
 also used as the field's name if no C<-name> option is used.
@@ -768,11 +813,9 @@ start and end. In practice C<-START_ROW> should never be needed; simply set
 C<-END_ROW => 1,> in each field which is to be the last field in a given row.
 Note that because some fields may need to span several columns e.g. a layout
 where say the first two fields are side-by-side and the following field is so
-wide it must take the whole width; the wider field's C<-STYLE_FIELDVALUE>
-setting may need to be set to C<qq{colspan="3"}> or similar. Note further that
-if you have set a record-level C<-STYLE_FIELDVALUE> that will need to be
-incorporated along with the C<colspan> setting.
-See example2 and example4 which have been updated to demonstrate these options.
+wide it must take the whole width; the wider field's C<-COLSPAN>
+setting may need to be set to C<-COLSPAN => 3,> or similar. See example2 and
+example4 which have been updated to demonstrate these options.
 
 C<-STYLE_*> Some of these options may be applied on a per-field basis; they
 are documented under Styles later.
@@ -827,8 +870,8 @@ If you wish to use a cascading style sheet with QuickForm then you need to set
 the -HEADER option to include a <link> tag which includes a reference to your
 stylesheet.
 
-If you wish to use multiple columns see C<-MULTI_COLUMN>, C<-START_ROW> and
-C<-END_ROW> as well as example2 and example4.
+If you wish to use multiple columns see C<-MULTI_COLUMN>, C<-START_ROW>,
+C<-END_ROW> and C<-COLSPAN> as well as example2 and example4.
 
 Whether you use a stylesheet for classes or in-line styles you can set the
 class or style using the -STYLE_* options, e.g.
@@ -1074,6 +1117,13 @@ If you get messages like this under pure mod_perl:
 the problem is with your configuration I<not> QuickForm, and I won't be able
 to help you. Please see the copious and high quality documentation at
 L<http://perl.apache.org> for help with this problem.
+
+Some browsers get awfully confused about colouring rows and cells in tables,
+so if you have problems with this please check the HTML that QuickForm
+produces (via your browsers View Source command) -- in my test cases QuickForm
+always outputs correct HTML so the problem if any is with the browser --
+however if you find that the HTML is invalid please email me your script plus
+the HTML shown by View Source (in case I can't run your script).
 
 =head1 AUTHOR
 
