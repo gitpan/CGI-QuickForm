@@ -1,3 +1,9 @@
+1999/09/26
+
+Bug fixes on the -CLEAN option; documentation corrections, e.g. to the
+&cleanup example. Added a new option: you can now have as many buttons as you
+want using the new -BUTTONS option. Again thanks to Paul for the suggestion.
+
 1999/09/22
 
 Added -CLEAN option. This lets you specify a subroutine to be executed on any

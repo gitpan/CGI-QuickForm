@@ -41,7 +41,6 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
 
     show_form(
         -ACCEPT      => \&on_valid_form, 
-        -BUTTONLABEL => 'Submit',
         -FOOTER      => undef,
         -HEADER      => undef,      
         -LANGUAGE    => 'en',
@@ -111,6 +110,12 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
             },
             # Any other CGI.pm field can be used in the same way.
         ],
+        -BUTTONS    => [
+            { -name => 'Add'    },
+            { -name => 'Edit'   },
+            { -name => 'List'   },
+            { -name => 'Remove' },
+        ],
     ) ;
  
 
@@ -149,8 +154,27 @@ something like this:
         # Give the user a thank you.
     }
 
-C<-BUTTONLABEL> Optional string. This is the label that appears on the submit
-button. It defaults to 'Submit', but may be any string.
+C<-BUTTONS> Optional array reference. This is an array of submit buttons. The
+buttons appear at the bottom of the form, after all the fields. Each button is
+defined as an anonymous hash, e.g.
+
+    -BUTTONS    => [
+        { -name => 'New'    },
+        { -name => 'Update' },
+        ],
+
+although any other legitimate C<CGI.pm> options may also be given, e.g.
+
+    -BUTTONS    => [
+        { -name => 'New',   -value => 'BUTTON_NEW'    },
+        { -name => 'Update' -value => 'BUTTON_UPDATE' },
+        ],
+
+If no C<-BUTTONS> option array reference is given it will be created with
+C<{ -name =E<lt> 'Submit' }> by default. Note that this option replaces the
+C<-BUTTONLABEL> option. If C<-BUTTONLABEL> is used it will be converted into
+the new form automatically so old scripts will I<not> be broken. However use
+of C<-BUTTONS> is recommended for all new work.
 
 C<-FOOTER> Optional string. This is used to present any text following the
 form and if used it must include everything up to and including final
@@ -269,9 +293,9 @@ typical routine might clean up excess whitespace, e.g.:
     sub cleanup {
         local $_ = shift ; # This is the value of param( <fieldname> )
 
-        tr/\s/ /s ; # Convert multiple whitespace to one space.
-        s/^\s*//o ; # Remove leading whitespace.
-        s/\s*$//o ; # Remove trailing whitespace.
+        tr/\t \n\r\f/ /s ; # Convert multiple whitespace to one space.
+        s/^\s*//o ;        # Remove leading whitespace.
+        s/\s*$//o ;        # Remove trailing whitespace.
 
         $_ ;
     }

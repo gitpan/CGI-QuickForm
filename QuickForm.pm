@@ -1,6 +1,6 @@
 package CGI::QuickForm ; # Documented at the __END__.
 
-# $Id: QuickForm.pm,v 1.11 1999/09/22 18:39:19 root Exp root $
+# $Id: QuickForm.pm,v 1.12 1999/09/26 14:49:23 root Exp $
 
 require 5.004 ;
 
@@ -15,7 +15,7 @@ use vars qw(
             %Translate 
             ) ;
 
-$VERSION = '1.30' ; 
+$VERSION = '1.40' ; 
 
 use Exporter() ;
 
@@ -29,7 +29,6 @@ my %Record ;
 sub show_form {
     %Record = (
         -LANGUAGE    => 'en',         # Language to use for default messages
-        -BUTTONLABEL => 'Submit',     # Default submit button text
         -TITLE       => 'Quick Form', # Default page title and heading
         -HEADER      => undef,      
         -FOOTER      => undef,
@@ -40,11 +39,13 @@ sub show_form {
         -ROWS        => undef,
         -COLUMNS     => undef,
         -FIELDS      => [ { -LABEL => 'No Fields Specified' } ],
+        -BUTTONS     => [ { -name  => 'Submit' } ], # Default button
         @_,
         ) ;
 
     # Backward compatibility.
     $Record{-LANGUAGE} = 'en' if $Record{-LANGUAGE} eq 'english' ;
+    $Record{-BUTTONS}[0]{-name} = $Record{-BUTTONLABEL} if $Record{-BUTTONLABEL} ;
 
     $Record{-REQUIRED} = 0 ; # Assume no fields are required.
 
@@ -53,25 +54,24 @@ sub show_form {
         my %field = %$fieldref ;
         # We have to write back to the original data, $fieldref only points to
         # a copy.
-        my *fieldref = \$Record{-FIELDS}[$i] ;
-        $fieldref->{-LABEL} = $field{-name}  unless $field{-LABEL} ;
-        $fieldref->{-name}  = $field{-LABEL} unless $field{-name} ;
-        $fieldref->{-TYPE}  = 'textfield'    unless $field{-TYPE} ;
-        $Record{-REQUIRED}  = 1              if $field{-REQUIRED} ;
-        if( $fieldref->{-TYPE} eq 'textfield' ) { 
+        $Record{-FIELDS}[$i]{-LABEL} = $field{-name}  unless $field{-LABEL} ;
+        $Record{-FIELDS}[$i]{-name}  = $field{-LABEL} unless $field{-name} ;
+        $Record{-FIELDS}[$i]{-TYPE}  = 'textfield'    unless $field{-TYPE} ;
+        $Record{-REQUIRED}           = 1              if $field{-REQUIRED} ;
+        if( $Record{-FIELDS}[$i]{-TYPE} eq 'textfield' ) { 
             if( $Record{-SIZE} and not $field{-size} ) {
-                $fieldref->{-size}      = $Record{-SIZE} ;
+                $Record{-FIELDS}[$i]{-size}      = $Record{-SIZE} ;
             }
             if( $Record{-MAXLENGTH} and not $field{-maxlength} ) {
-                $fieldref->{-maxlength} = $Record{-MAXLENGTH} ;
+                $Record{-FIELDS}[$i]{-maxlength} = $Record{-MAXLENGTH} ;
             }
         }
-        elsif( $fieldref->{-TYPE} eq 'textarea' ) { 
+        elsif( $Record{-FIELDS}[$i]{-TYPE} eq 'textarea' ) { 
             if( $Record{-ROWS} and not $field{-rows} ) {
-                $fieldref->{-rows}    = $Record{-ROWS} ;
+                $Record{-FIELDS}[$i]{-rows}    = $Record{-ROWS} ;
             }
             if( $Record{-COLUMNS} and not $field{-columns} ) {
-                $fieldref->{-columns} = $Record{-COLUMNS} ;
+                $Record{-FIELDS}[$i]{-columns} = $Record{-COLUMNS} ;
             }
         }
         $i++ ;
@@ -117,7 +117,7 @@ sub _check_form {
         # Clean any fields that have a clean routine specified.
         foreach my $fieldref ( @{$Record{-FIELDS}} ) {
             my %field = %$fieldref ;
-            param( $field{-name}, &{$field{-CLEAN}}( param( $field{-name} ) )
+            param( $field{-name}, &{$field{-CLEAN}}( param( $field{-name} ) ) )
             if defined $field{-CLEAN} ;
         }
         &{$Record{-ACCEPT}} ;
@@ -148,20 +148,27 @@ sub _show_form {
 
     foreach my $fieldref ( @{$Record{-FIELDS}} ) {
         my %field    = %$fieldref ;
+        my $type     = delete $field{-TYPE} ;
+        next if $type eq 'submit' ;
         my $required = delete $field{-REQUIRED} ;
         $required    = $required ? $REQUIRED : '' ;
         my $invalid  = delete $field{-INVALID} ;
         $invalid     = $invalid ? $INVALID : '' ;
         print "<TR><TD>$field{-LABEL}$required$invalid</TD><TD>" ;
-        delete $field{-LABEL} ;
-        delete $field{-VALIDATE} ;
-        my $type     = delete $field{-TYPE} ;
+        delete @field{-LABEL,-VALIDATE,-CLEAN,-SIZE,-MAXLENGTH,-ROWS,-COLUMNS} ;
         no strict "refs" ;
-        print &{$type}( %field ) ;
+        local $^W = 0 ; # Switch off moans about undefined values.
+        print &{$type}( %field ) ; 
         print "</TD></TR>" ;
     }
 
-    print "</TABLE>", submit( $Record{-BUTTONLABEL} ), end_form ; 
+    print "</TABLE>" ;
+
+    foreach my $fieldref ( @{$Record{-BUTTONS}} ) {
+        print submit( %$fieldref ), " " ;
+    }
+
+    print end_form ; 
 
     if( $Record{-FOOTER} ) {
         print $Record{-FOOTER} ;
@@ -268,7 +275,6 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
 
     show_form(
         -ACCEPT      => \&on_valid_form, 
-        -BUTTONLABEL => 'Submit',
         -FOOTER      => undef,
         -HEADER      => undef,      
         -LANGUAGE    => 'en',
@@ -338,6 +344,12 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
             },
             # Any other CGI.pm field can be used in the same way.
         ],
+        -BUTTONS    => [
+            { -name => 'Add'    },
+            { -name => 'Edit'   },
+            { -name => 'List'   },
+            { -name => 'Remove' },
+        ],
     ) ;
  
 
@@ -376,8 +388,27 @@ something like this:
         # Give the user a thank you.
     }
 
-C<-BUTTONLABEL> Optional string. This is the label that appears on the submit
-button. It defaults to 'Submit', but may be any string.
+C<-BUTTONS> Optional array reference. This is an array of submit buttons. The
+buttons appear at the bottom of the form, after all the fields. Each button is
+defined as an anonymous hash, e.g.
+
+    -BUTTONS    => [
+        { -name => 'New'    },
+        { -name => 'Update' },
+        ],
+
+although any other legitimate C<CGI.pm> options may also be given, e.g.
+
+    -BUTTONS    => [
+        { -name => 'New',   -value => 'BUTTON_NEW'    },
+        { -name => 'Update' -value => 'BUTTON_UPDATE' },
+        ],
+
+If no C<-BUTTONS> option array reference is given it will be created with
+C<{ -name =E<lt> 'Submit' }> by default. Note that this option replaces the
+C<-BUTTONLABEL> option. If C<-BUTTONLABEL> is used it will be converted into
+the new form automatically so old scripts will I<not> be broken. However use
+of C<-BUTTONS> is recommended for all new work.
 
 C<-FOOTER> Optional string. This is used to present any text following the
 form and if used it must include everything up to and including final
@@ -496,9 +527,9 @@ typical routine might clean up excess whitespace, e.g.:
     sub cleanup {
         local $_ = shift ; # This is the value of param( <fieldname> )
 
-        tr/\s/ /s ; # Convert multiple whitespace to one space.
-        s/^\s*//o ; # Remove leading whitespace.
-        s/\s*$//o ; # Remove trailing whitespace.
+        tr/\t \n\r\f/ /s ; # Convert multiple whitespace to one space.
+        s/^\s*//o ;        # Remove leading whitespace.
+        s/\s*$//o ;        # Remove trailing whitespace.
 
         $_ ;
     }
