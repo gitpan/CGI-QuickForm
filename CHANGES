@@ -1,6 +1,27 @@
+2000/02/08
+ 
+Cedric Scott requested that style options could be applied to individual rows,
+not just to all rows and supplied a patch. This was clearly a good idea but
+instead of only allowing styles to be applied on a per-field (i.e. per row)
+basis the new style options I've implemented allow for style to be applied on
+a per cell basis i.e. each label and each value, separately. The existing
+style options continue to work as before since they apply `globally'. But you
+can now over-ride them per-row or per-cell. See the -STYLE_DESC, -STYLE_ROW,
+-STYLE_FIELDNAME and -STYLE_FIELDVALUE options under the Styles section of the
+pod. Example 5 has been updated slightly to reflect the new usage and is now
+truly garish.
+
+
+2000/02/06
+
+Added quickform.t. All this does is check that the module loads. Suggestions
+(or better still code) to add to the test module is welcome.
+
+
 2000/01/25
 
-Made all hand generated HTML in QuickForm XHTML compliant.
+Made all hand generated HTML in QuickForm XHTML compliant (but your version of
+CGI.pm might not be).
 Updated the examples to be XHTML compliant too.
 
 

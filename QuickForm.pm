@@ -1,6 +1,6 @@
 package CGI::QuickForm ; # Documented at the __END__.
 
-# $Id: QuickForm.pm,v 1.30 2000/01/18 19:20:21 root Exp root $
+# $Id: QuickForm.pm,v 1.32 2000/02/08 20:02:44 root Exp $
 
 require 5.004 ;
 
@@ -15,7 +15,7 @@ use vars qw(
             %Translate 
             ) ;
 
-$VERSION   = '1.64' ; 
+$VERSION   = '1.70' ; 
 
 use Exporter() ;
 
@@ -80,6 +80,10 @@ sub show_form {
         my %field = %$fieldref ;
         # We have to write back to the original data, $fieldref only points to
         # a copy.
+        foreach my $style ( qw( ROW FIELDNAME FIELDVALUE DESC ) ) {
+            my $value = $Form{-FIELDS}[$i]{"-STYLE_$style"} || $Form{"-STYLE_$style"} ;
+            $Form{-FIELDS}[$i]{"-STYLE_$style"} = " $value" if $value ;
+        }
         $Form{-FIELDS}[$i]{-LABEL} = $field{-name}  unless $field{-LABEL} ;
         $Form{-FIELDS}[$i]{-name}  = $field{-LABEL} unless $field{-name} ;
         $Form{-FIELDS}[$i]{-TYPE}  = 'textfield'    unless $field{-TYPE} ;
@@ -187,19 +191,22 @@ sub _show_form {
     my @hidden ;
 
     foreach my $fieldref ( @{$Form{-FIELDS}} ) {
-        my %field    = %$fieldref ;
-        my $type     = delete $field{-TYPE} ;
+        my %field      = %$fieldref ;
+        my $type       = delete $field{-TYPE} ;
         push @hidden, $fieldref   if $type eq 'hidden' ;
         next if $type eq 'submit' or $type eq 'hidden' ;
-        my $required = delete $field{-REQUIRED} ;
-        $required    = $required ? $REQUIRED : '' ;
-        my $invalid  = delete $field{-INVALID} ;
-        $invalid     = $invalid ? $INVALID : '' ;
-        my $why      = delete $field{-WHY} ;
-        print qq{<tr$Form{-STYLE_ROW}><td$Form{-STYLE_FIELDNAME}>} .
-              qq{$field{-LABEL}$required$invalid} .
-              qq{</td><td$Form{-STYLE_FIELDVALUE}>} ;
-        print "<span$Form{-STYLE_DESC}>$field{-DESC}</span><br />" if $field{-DESC} ;
+        my $required   = delete $field{-REQUIRED} ;
+        $required      = $required ? $REQUIRED : '' ;
+        my $invalid    = delete $field{-INVALID} ;
+        $invalid       = $invalid ? $INVALID : '' ;
+        my $why        = delete $field{-WHY} ;
+        my $rowstyle   = delete $field{-STYLE_ROW} ;
+        my $namestyle  = delete $field{-STYLE_FIELDNAME} ;
+        my $valuestyle = delete $field{-STYLE_FIELDVALUE} ;
+        my $descstyle  = delete $field{-STYLE_DESC} ;
+        print qq{<tr$rowstyle><td$namestyle>$field{-LABEL}$required$invalid} .
+              qq{</td><td$valuestyle>} ;
+        print "<span$descstyle>$field{-DESC}</span><br />" if $descstyle ;
         delete @field{-LABEL,-VALIDATE,-CLEAN,-SIZE,-MAXLENGTH,-ROWS,-COLUMNS} ;
         no strict "refs" ;
         local $^W = 0 ; # Switch off moans about undefined values.
@@ -364,17 +371,20 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
         -TABLE_OPTIONS    => '',
         -FIELDS           => [            
             { 
-                -LABEL     => 'Name', 
-                -REQUIRED  => undef,
-                -TYPE      => 'textfield',
-                -VALIDATE  => undef, # Set this to validate the field
-                -CLEAN     => undef, # Set this to clean up valid data
-                -DESC      => undef,
+                -LABEL            => 'Name', 
+                -REQUIRED         => undef,
+                -TYPE             => 'textfield',
+                -VALIDATE         => undef, # Set this to validate the field
+                -CLEAN            => undef, # Set this to clean up valid data
+                -DESC             => undef,
+                -STYLE_FIELDNAME  => '', # If set over-rides form-level setting
+                -STYLE_FIELDVALUE => '', # If set over-rides form-level setting
+                -STYLE_ROW        => '', # If set over-rides form-level setting
                 # Lowercase options are those supplied by CGI.pm
-                -name      => undef, # Defaults to -LABEL's value.
-                -default   => undef,
-                -size      => 30,
-                -maxlength => undef,
+                -name             => undef, # Defaults to -LABEL's value.
+                -default          => undef,
+                -size             => 30,
+                -maxlength        => undef,
             },
             # For all others: same QuickForm options as above
             # and all CGI.pm options (which vary with -TYPE) available 
@@ -669,6 +679,9 @@ example:
     # All three fields will be textfields. Name and Age will have a -size of
     # 50 but Country will have a -size of 20. All three will have a -maxlength
     # of 70.
+
+C<-STYLE_*> These options apply globally and are documented under Styles
+later.
  
 C<-FIELDS> Required array reference. This is an array of hashes; there must
 be at least one. The fields are displayed in the order given. The options
@@ -704,6 +717,9 @@ also used as the field's name if no C<-name> option is used.
 C<-REQUIRED> Optional boolean. Default is false. If set to true the field
 must contain something. Should only be used with text fields. It is ignored if
 C<-VALIDATE> is given since C<-VALIDATE> overrides (see later).
+
+C<-STYLE_*> Some of these options may be applied on a per-field basis; they
+are documented under Styles later.
 
 C<-TYPE> Optional string. Default is C<textfield>. May be any field supported
 by C<CGI.pm>.
@@ -761,8 +777,12 @@ class or style using the -STYLE_* options, e.g.
     -STYLE_FIELDNAME  => qq{style="font-size:12pt;margin:2em;"},
     -STYLE_FIELDVALUE => qq{class="valueclass"},
     -STYLE_ROW        => qq{class="rowclass"},
-    -STYLE_WHY        => qq{style="font-style:italic;color:red"},
     -STYLE_DESC       => qq{style="color:darkblue"},
+
+The above styles apply globally to all rows, but can be over-ridden, see
+later.
+
+    -STYLE_WHY        => qq{style="font-style:italic;color:red"},
 
 Because a popular browser cannot cope with this:
 
@@ -794,6 +814,33 @@ See files, example3 (linux-help) and example5 (bicycle) for more examples.
 
 You can of course also apply your own global styles to the existing tags in
 the normal way.
+
+When C<-STYLE_DESC>, C<-STYLE_FIELDNAME>, C<-STYLE_FIELDVALUE> and
+C<-STYLE_ROW> are set in C<show_form> at form-level (i.e. not inside the
+C<-FIELDS> section) they apply globally to every fieldname cell, fieldvalue
+cell and row respectively. If you require finer control you can set these
+styles on a per field basis by including them as field-level options, e.g.
+
+    show_form(
+        -ACCEPT           => \&on_valid_form,
+        -STYLE_FIELDNAME  => 'style="background-color:#AAAAAA"',
+        -STYLE_FIELDVALUE => 'style="background-color:#DDDDDD"',
+        -FIELDS           => [
+                { 
+                    -LABEL            => 'Forename', 
+                    -STYLE_FIELDNAME  => 'style="background-color:LIGHTGREEN"', 
+                    -STYLE_FIELDVALUE => 'style="background-color:YELLOW"', 
+                },
+        # etc.
+
+If you have set a style at form-level but do not wish it to apply to a
+particular row you can over-ride either by setting a new style for the row as
+in the example above or by coding C<-STYLE_ROW => ' '> for example; we have to
+use a space because if we used the empty string or undef the global style
+would be applied.
+
+See example 5.
+     
 
 =head2 EXAMPLE #1: Using a form to generate email 
 

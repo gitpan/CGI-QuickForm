@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id: linux-help,v 1.19 2000/01/07 19:46:05 root Exp $
+# $Id: linux-help,v 1.20 2000/02/06 23:44:50 root Exp $
 
 # Copyright (c) Mark Summerfield 1999-2000. All Rights Reserved.
 # May be used/distributed under the GPL.
@@ -34,7 +34,7 @@ use HTML::Entities ;
 use Storable qw( freeze thaw ) ;
 use URI::Escape ;
 
-use vars qw( $VERSION ) ; $VERSION = '1.02' ;
+use vars qw( $VERSION ) ; $VERSION = '1.03' ;
 
 use vars qw( $URL $PREDEFINED_PAGES ) ;
 
@@ -311,7 +311,7 @@ sub full_system {
         }
         $result .= "signal $rc\n" ;
     }
-#    print qq{<FONT COLOR="RED">$result</FONT>} if $result ;
+#    print qq{<font color="RED">$result</font>} if $result ;
     ( $rc != 0 ) ;
 }
 
@@ -686,7 +686,7 @@ C<URI::Escape>
 
 =head1 COPYRIGHT
 
-Copyright (c) Mark Summerfield 1999. All Rights Reserved.
+Copyright (c) Mark Summerfield 1999-2000. All Rights Reserved.
 May be used/distributed under the GPL.
 Email <summer@perlpress.com> with 'linux-help' in the subject line.
 
