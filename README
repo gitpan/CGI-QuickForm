@@ -175,7 +175,16 @@ If no C<-BUTTONS> option array reference is given it will be created with
 C<{ -name =E<lt> 'Submit' }> by default. Note that this option replaces the
 C<-BUTTONLABEL> option. If C<-BUTTONLABEL> is used it will be converted into
 the new form automatically so old scripts will I<not> be broken. However use
-of C<-BUTTONS> is recommended for all new work.
+of C<-BUTTONS> is recommended for all new work. To see which button has been
+pressed you might use code like this in your on_valid_form subroutine:
+
+    if( param( 'New' ) ) {
+        # New pressed
+    }
+    elsif( param( 'Update' ) ) {
+        # Update pressed
+    }
+    # etc.
 
 C<-CHECK> Optional boolean, default is true. When C<show_form> is called it
 will check (i.e. do validation) providing there are parameters (i.e. the user

@@ -1,6 +1,6 @@
 #!/usr/bin/perl -Tw
 
-# $Id: contacts,v 1.14 1999/10/21 21:19:13 root Exp root $
+# $Id: contacts,v 1.17 1999/10/24 13:49:38 root Exp root $
 
 # Copyright (c) Mark Summerfield 1999. All Rights Reserved.
 # May be used/distributed under the GPL.
@@ -8,16 +8,12 @@
 # WARNING - this program is provided as an example of QuickForm use and not as
 # an example of production quality CGI code - it is not secure. 
 
+# Set $SHOW_SQL = 1 to see the SQL being executed.
+
 # TODO validation - field & record
 # TODO lookups (drop down lists) for key X val tables (equiv Oracle LOVs)
 # TODO drilldown support Table=tablename&Keyfield=fieldname&Orderby=fieldname&ID=value
 # TODO generalise into a module
-# TODO export - probably as a separate script dbf2tab
-# TODO import - probably as a separate script tab2dbf, i.e. first row is
-# fieldnames with optional types, subsequent rows actual data, e.g.
-#
-# ID[number]\tFORENAME[char(50)]\t...\n
-# 1\tFred\t...\n
 
 # The table this example is based on was created thus:
 #
@@ -47,15 +43,36 @@ use DBI ;
 use HTML::Entities ;
 use URI::Escape ;
 
+use vars qw( $VERSION ) ;
+$VERSION     = '1.00' ;
+
+my $ACTION   = '.qfdb' ;
+my( $ADD, $DELETE, $EDIT, $FIND, $LIST, $ORDERBY, $REMOVE, $SEARCH, 
+    $UPDATE, $WHERE ) = 
+    qw( Add Delete Edit Find List OrderBy Remove Search Update Where ) ;
 
 # Database specific start
-my $SHOW_SQL = 0 ;
-my $ACTION   = '.qfdb' ;
-my $TITLE    = 'Contacts' ;
-my $DATABASE = '/root/web/db/contacts' ;
+my $SHOW_SQL        = 0 ;
+# For large tables change $LIST to $FIND as the default initial action
+my $INITIAL_ACTION  = $LIST ;
+my %COLOUR          = (
+    -FORM_BG    => '#FFCAFF',
+    -DEL_HEAD   => '#E6BEFF',
+    -DEL_FIELD  => '#FFE0E0',
+    -DEL_VALUE  => '#FFA9A9',
+    -LIST_HEAD  => '#E6BEFF',
+    -LIST_BAND1 => '#FAFAFA',
+    -LIST_BAND2 => '#EDEDED',
+    ) ;
+my $TITLE           = 'Contacts' ;
+my $DATABASE        = '/root/web/db/contacts' ;
+my $KEYFIELD        = 'ID' ;
+my $INITIAL_ORDERBY = 'ID' ;
+# The XBase driver only supports a single WHERE item and does not support
+# LIKE. The CSV driver does not appear to support WHERE at all.
+#my $TABLE    = 'contacts_csv' ;
+#my $CONNECT  = "DBI:CSV:f_dir=$DATABASE" ;
 my $TABLE    = 'contacts' ;
-my $KEYFIELD = 'ID' ;
-my $ORDER_BY = 'FORENAME' ;
 my $CONNECT  = "DBI:XBase:$DATABASE" ;
 my @FIELD    = (
             {
@@ -90,32 +107,24 @@ my @FIELD    = (
                 -DB_HTML   => undef,
                 -LABEL     => 'Home Tel.',
                 -VALIDATE  => \&valid_phone,
-                -size      => 20,
-                -maxlen    => 20,
             },
             {
                 -DB_NAME   => 'WORKTEL',
                 -DB_HTML   => undef,
                 -LABEL     => 'Work Tel.',
                 -VALIDATE  => \&valid_phone,
-                -size      => 20,
-                -maxlen    => 20,
             },
             {
                 -DB_NAME   => 'MOBILE',
                 -DB_HTML   => undef,
                 -LABEL     => 'Mobile',
                 -VALIDATE  => \&valid_phone,
-                -size      => 20,
-                -maxlen    => 20,
             },
             {
                 -DB_NAME   => 'FAX',
                 -DB_HTML   => undef,
                 -LABEL     => 'Fax',
                 -VALIDATE  => \&valid_phone,
-                -size      => 20,
-                -maxlen    => 20,
             },
             {
                 -DB_NAME   => 'EMAIL',
@@ -167,8 +176,6 @@ my @FIELD    = (
                 -DB_HTML   => undef,
                 -DB_ALIGN  => 'RIGHT',
                 -LABEL     => 'Birthday',
-                -size      => 20,
-                -maxlen    => 20,
             },
             {
                 -DB_NAME   => 'NOTES',
@@ -194,10 +201,8 @@ sub valid_phone {
 # Database specific finish
 
 
-my( $ADD, $DELETE, $EDIT, $LIST, $ORDERBY, $REMOVE, $UPDATE ) = 
-    qw( Add Del Edit List OrderBy Remove Update ) ;
-my $URL   = url() ;
-
+my( $COMPARISON, $CONNECTOR, $VALUE ) = qw( comparison connector value ) ;
+my $URL = url() ;
 
 my $Dbh = DBI->connect( $CONNECT ) or &fail_form( $DBI::errstr ) ;
 $Dbh->{'RaiseError'} = 1 ; # DBI exception handling.
@@ -206,12 +211,14 @@ if( not param( $ACTION ) ) {
     param( $ACTION, param( $ADD    ) ) if param( $ADD ) ;
     param( $ACTION, param( $DELETE ) ) if param( $DELETE ) ;
     param( $ACTION, param( $EDIT   ) ) if param( $EDIT ) ;
+    param( $ACTION, param( $FIND   ) ) if param( $FIND ) ;
     param( $ACTION, param( $LIST   ) ) if param( $LIST ) ;
     param( $ACTION, param( $REMOVE ) ) if param( $REMOVE ) ;
+    param( $ACTION, param( $SEARCH ) ) if param( $SEARCH ) ;
     param( $ACTION, param( $UPDATE ) ) if param( $UPDATE ) ;
 }
- 
-my $Action = param( $ACTION )   || $LIST ;
+
+my $Action = param( $ACTION )   || $INITIAL_ACTION ;  
 my $ID     = param( $KEYFIELD ) || '' ; 
 
 for( my $i = 0 ; $i <= $#FIELD ; $i++ ) {
@@ -231,22 +238,25 @@ elsif( $Action eq $DELETE ) {
 elsif( $Action eq $REMOVE ) {
     &on_valid_form ;
 }
-elsif( $Action eq $LIST ) {
+elsif( $Action eq $FIND ) {
+    &find_records ; # Offers search option which leads to list
+}
+elsif( $Action eq $LIST or $Action eq $SEARCH ) {
     &list_records ;
 }
 
-&clean_and_exit ;
+&quit ;
 
 
 
-sub clean_and_exit {
+sub quit {
     $Dbh->disconnect() ;
 }
 
      
 sub on_valid_form {
 
-    my $result = p( "Action is $Action, ID is $ID" ) ;
+    my $result = p( "Action is $Action, ID is $ID" ) ; # DEBUG
 
     if( $Action eq $ADD ) {
         $result = &insert_record ; 
@@ -275,7 +285,7 @@ sub execute_sql {
     eval {
         $Dbh->do( $stmt ) ; 
     } ;
-    $result = &fail_form( "$@ <P>Query: $stmt" ) if $@ ;
+    $result = &fail_form( "$@ <P>Executed:<BR>$stmt" ) if $@ ;
 
     $result ;
 }
@@ -285,7 +295,7 @@ sub fail_form {
 
     my $err = shift || $DBI::errstr ;
 
-    h3( colour( "RED",  "$TITLE Failed" ) ) .
+    h3( colour( "RED",  "$TITLE - Action Failed" ) ) .
     p(  colour( "GREEN", $err ) ) .
     p( qq{<A HREF="$URL">$TITLE</A>} )
     ;
@@ -300,6 +310,10 @@ sub add_or_edit_record {
     CGI::delete( $ADD ) ;
     my $check  = 1 ;
     my $button = $ADD ;
+    my $delete = $ID ? 
+                    qq{<A HREF="$URL?$ACTION=$DELETE\&ID=$ID">$DELETE</A> } :
+                    '' ;
+    my $add = $Action eq $ADD ? '' : qq{<A HREF="$URL?$ACTION=$ADD">$ADD</A> } ;
     $button    = $UPDATE if param( $UPDATE ) or $Action eq $EDIT ;
     if( $Action eq $EDIT ) {
         $check = 0 ;
@@ -310,13 +324,25 @@ sub add_or_edit_record {
             { -name => $UPDATE,      -TYPE => 'hidden' },
             { -name => 'OriginalID', -TYPE => 'hidden', -value => $ID };
     }
+    my $title = $Action eq $UPDATE ? $EDIT : $Action ;
 
     show_form(
-        -HEADER  => header . start_html( $TITLE ) . h3( $TITLE ) . $result,
+        -HEADER  => header . 
+                    start_html( 
+                        '-title' => $TITLE, 
+                        -BGCOLOR => $COLOUR{-FORM_BG},
+                        ) . 
+                    h3( "$TITLE - $title" ) . $result,
+        -FOOTER  => p( $add .  $delete .
+                       qq{<A HREF="$URL?$ACTION=$FIND">$FIND</A> } . 
+                       qq{<A HREF="$URL?$ACTION=$LIST">$LIST</A>} ) .
+                    hr . end_html,
         -FIELDS  => \@field,
-        -BUTTONS => [ { -name => $button }, { -name => $LIST } ], 
+        -BUTTONS => [ { -name => $button } ], 
         -ACCEPT  => \&on_valid_form,
         -CHECK   => $check,
+        -SIZE    => 20,
+        -MAXLEN  => 20,
         ) ;
 }
 
@@ -325,10 +351,12 @@ sub delete_record {
 
     print
         header,
-        start_html( $TITLE ),
-        h3( $TITLE ),
+        start_html( '-title' => $TITLE, -BGCOLOR => $COLOUR{-FORM_BG} ),
+        h3( "$TITLE - $DELETE" ),
         qq{<TABLE BORDER="1" CELLSPACING="0">},
-        Tr( th( 'Field' ), th( 'Value' ) ),
+        qq{<TR BGCOLOR="$COLOUR{-DEL_HEAD}">},
+        th( 'Field' ), th( 'Value' ),
+        "</TR>",
         ;
 
     my $result = &retrieve_record ;
@@ -339,17 +367,88 @@ sub delete_record {
         next if $fieldref->{-TYPE} and 
                 ( $fieldref->{-TYPE} eq 'hidden' or 
                   $fieldref->{-TYPE} eq 'submit' ) ;
-        my $field = param( $fieldref->{-LABEL} ) || '&nbsp;' ;
-        print "<TR><TD>$fieldref->{-LABEL}</TD><TD>$field</TD></TR>" ;
+        my $field = param( $fieldref->{-LABEL} ) ;
+        if( my $html = $fieldref->{-DB_HTML} and $field ) {
+            $field = &render_field( $field, $html ) ;
+        }
+        $field ||= '&nbsp;' ;
+        my $align    = qq{ ALIGN="$fieldref->{-DB_ALIGN}"} ;
+        my $valign   = qq{ VALIGN="$fieldref->{-DB_VALIGN}"} ;
+        my $currency = $fieldref->{-DB_PREFIX} ;
+        print qq{<TR><TD BGCOLOR="$COLOUR{-DEL_FIELD}">} .
+              qq{$fieldref->{-LABEL}</TD>} .
+              qq{<TD BGCOLOR="$COLOUR{-DEL_VALUE}"$align>} .
+              qq{$currency$field</TD></TR>} ;
     }
 
     print
         "</TABLE>",
-        p( qq{<A HREF="$URL?$ACTION=$REMOVE\&ID=$ID">Confirm Delete</A>} ),
-        p( qq{<A HREF="$URL?$ACTION=$ADD">$ADD</A>} . " " . 
+        p( qq{<A HREF="$URL?$ACTION=$REMOVE\&ID=$ID">Confirm Delete</A>} 
+        . '&nbsp;&nbsp;' .
+        qq{<A HREF="$URL?$ACTION=$EDIT\&ID=$ID">$EDIT</A>} ),
+        p( qq{<A HREF="$URL?$ACTION=$ADD">$ADD</A> } . 
+        qq{<A HREF="$URL?$ACTION=$FIND">$FIND</A> } . 
         qq{<A HREF="$URL?$ACTION=$LIST">$LIST</A>} ),
-        end_html,
+        hr, end_html,
         ;
+}
+
+
+sub find_records {
+
+    my @comparison = ( 'Any', 'Like', 'Not Like', 
+                       '=', '!=', '<=', '<', '>', '>=', 
+                       'Is Null', 'Is Not Null' ) ;
+    my @connector  = ( 'And', 'Or' ) ;
+
+    print
+        header, 
+        start_html( '-title' => $TITLE, -BGCOLOR => $COLOUR{-FORM_BG} ),
+        h3( "$TITLE - $FIND" ),
+        start_form,
+        qq{<TABLE BORDER="0" CELLSPACING="0">},
+        Tr( th( [ "Field", "\L\u$COMPARISON", "\L\u$VALUE", "\L\u$CONNECTOR" ] ) ),
+        ;
+   
+    my @orderby ;
+    my $i = -1 ;
+    foreach my $fieldref ( @FIELD ) {
+        $i++ ;
+        next if $fieldref->{-TYPE} and 
+                ( $fieldref->{-TYPE} eq 'hidden' or 
+                  $fieldref->{-TYPE} eq 'submit' ) ;
+        push @orderby, $fieldref->{-LABEL} ;
+        print 
+            qq{<TR><TD>$fieldref->{-LABEL}</TD><TD>},
+            scrolling_list(
+                -name     => "$COMPARISON$i",
+                -size     => 1,
+                '-values' => \@comparison,
+            ),
+            qq{</TD><TD>},
+            textfield( "$VALUE$i" ),
+            qq{</TD><TD>},
+            scrolling_list(
+                -name     => "$CONNECTOR$i",
+                -size     => 1,
+                '-values' => \@connector,
+            ),
+            qq{</TD></TR>},
+            ;
+    }
+
+    print 
+        qq{<TR><TD><I>Order by</I></TD><TD COLSPAN="3">},
+        scrolling_list(
+            -name     => $ORDERBY,
+            -size     => 1,
+            '-values' => \@orderby,
+        ),
+        "</TD><TD></TD></TR></TABLE>", 
+        submit( $SEARCH ), end_form, 
+        qq{<A HREF="$URL?$ACTION=$ADD">$ADD</A> } .
+        qq{<A HREF="$URL?$ACTION=$LIST">$LIST</A>},
+        hr, end_html ;
 }
 
 
@@ -357,15 +456,16 @@ sub list_records {
     my $result = shift || '' ;
 
     my @label = &get_labels ;
+    my $where = $Action eq $SEARCH ? &get_where : param( $WHERE ) || '' ;
 
     print
         header, 
-        start_html( $TITLE ),
-        h3( $TITLE ),
+        start_html( '-title' => $TITLE, -BGCOLOR => $COLOUR{-FORM_BG} ),
+        h3( "$TITLE - $LIST" ),
         $result,
         ;
 
-    my $order_by = &label2fieldname( param( $ORDERBY ) ) || $ORDER_BY ;
+    my $order_by = &label2fieldname( param( $ORDERBY ) ) || $INITIAL_ORDERBY ;
     my $stmt     = "SELECT " ;
     {
         local $^W = 0 ;
@@ -373,26 +473,27 @@ sub list_records {
         $stmt .= join ", ", map { $_->{-DB_NAME} } @FIELD ;
     }
     chop $stmt ; chop $stmt ;
-    $stmt .= " FROM $TABLE ORDER BY $order_by" ;
+    $stmt .= " FROM $TABLE " ;
+    $stmt .= "WHERE $where "      if $where ;
+    $stmt .= "ORDER BY $order_by" if $order_by ;
     print p( "Executed:<BR>", tt( colour( 'DARKBLUE', $stmt ) ) ) if $SHOW_SQL ;
 
     print
         qq{<TABLE BORDER="1" CELLSPACING="0">},
-        qq{<TR BGCOLOR="#E6BEFF">},
-        qq{<TD ALIGN="CENTER" COLSPAN="2">} .
-        qq{<A HREF="$URL?$ACTION=$ADD">$ADD</A></TD>}, 
+        qq{<TR BGCOLOR="$COLOUR{-LIST_HEAD}">},
+        qq{<TD ALIGN="CENTER"><A HREF="$URL?$ACTION=$ADD">$ADD</A></TD>},
+        qq{<TD ALIGN="CENTER"><A HREF="$URL?$ACTION=$FIND">$FIND</A></TD>},
         th( [ map { qq{<A HREF="$URL?$ACTION=$LIST\&} . #"
-                    qq{$ORDERBY=} . 
-                    uri_escape( $_ ) . 
-                    qq{">} . #"
-                    encode_entities( $_ ) .
-                    "</A>"
+                    qq{$ORDERBY=} . uri_escape( $_ ) . 
+                    qq{\&$WHERE=} . uri_escape( $where ).
+                    qq{">} . encode_entities( $_ ) . "</A>" #"
                    } @label ] ),
         "</TR>",
         ;
 
     my $matches  = 0 ;
-    my @colour   = ( qq{ BGCOLOR="#FAFAFA"}, qq{ BGCOLOR="#EDEDED"} ) ;
+    my @colour   = ( qq{ BGCOLOR="$COLOUR{-LIST_BAND1}"}, 
+                     qq{ BGCOLOR="$COLOUR{-LIST_BAND2}"} ) ;
     my $colour   = $colour[0] ;
     $@           = undef ;
     eval {
@@ -405,34 +506,14 @@ sub list_records {
             print "<TR$colour>" ;
             $colour = ( $colour eq $colour[0] ) ? $colour[1] : $colour[0] ;
             print
-                qq{<TD><A HREF="$URL?$ACTION=$EDIT\&ID=$id">$EDIT</A></TD>}, 
-                qq{<TD><A HREF="$URL?$ACTION=$DELETE\&ID=$id">$DELETE</A></TD>} ;
+                qq{<TD ALIGN="CENTER">},
+                qq{<A HREF="$URL?$ACTION=$EDIT\&ID=$id">$EDIT</A></TD>}, 
+                qq{<TD ALIGN="CENTER">},
+                qq{<A HREF="$URL?$ACTION=$DELETE\&ID=$id">$DELETE</A></TD>} ;
             for( my $i = 0 ; $i < $#FIELD ; $i++ ) {
                 my $field = $field[$i] ;
                 if( my $html = $FIELD[$i]->{-DB_HTML} and $field ) {
-                    if( $html eq 'mailto' or $html eq 'email' ) {
-                        $field = qq{<A HREF="mailto:$field">$field</A>} ;
-                    }
-                    elsif( $html eq 'url' or $html eq 'web' ) {
-                        my $protocol = $field =~ m,^(?:http|ftp|gopher|wais|/), ? 
-                                            '' : 'http://' ;
-                        $field = qq{<A HREF="$protocol$field">$field</A>} ;
-                    }
-                    elsif( $html eq 'b' or $html eq 'bold' ) {
-                        $field = qq{<B>$field</B>} ;
-                    }
-                    elsif( $html eq 'i' or $html eq 'italic' ) {
-                        $field = qq{<I>$field</I>} ;
-                    }
-                    elsif( $html eq 'bi' or $html eq 'bolditalic' ) {
-                        $field = qq{<B><I>$field</I></B>} ;
-                    }
-                    elsif( $html eq 'tt' or $html eq 'fixed' ) {
-                        $field = qq{<TT>$field</TT>} ;
-                    }
-                    elsif( $html =~ /^h([1-6])$/o ) {
-                        $field = qq{<H$1>$field</H$1>} ;
-                    }
+                    $field = &render_field( $field, $html ) ;
                 }
                 my $align    = qq{ ALIGN="$FIELD[$i]->{-DB_ALIGN}"} ;
                 my $valign   = qq{ VALIGN="$FIELD[$i]->{-DB_VALIGN}"} ;
@@ -450,23 +531,21 @@ sub list_records {
         $sth->finish() ;
     } ;
     if( $@ ) { 
-        print '</TABLE>' . &fail_form( "$@ <P>Query: $stmt" ) ;
+        print '</TABLE>' . &fail_form( "$@ <P>Executed:<BR>$stmt" ) ;
     }
     else {
         print '</TABLE>' ;
     }
     my $s = $matches == 1 ? '' : 's' ;
     print p( "$matches record$s\&nbsp;\&nbsp;" . 
-             qq{<A HREF="$URL?$ACTION=$ADD">$ADD</A>} ), hr, end_html ;
+             qq{<A HREF="$URL?$ACTION=$ADD">$ADD</A> } .
+             qq{<A HREF="$URL?$ACTION=$FIND">$FIND</A> } .
+             qq{<A HREF="$URL?$ACTION=$LIST">$LIST</A>} 
+           ), hr, end_html ;
 }
 
 
 sub insert_record {
-
-    if( not param( $KEYFIELD ) ) {
-        $ID = ( scalar time - 926980000 ) . "." . $$ ;
-        param( $KEYFIELD, $ID ) ;
-    }
 
     my $stmt = "INSERT INTO $TABLE (" ; 
     {
@@ -533,7 +612,7 @@ sub retrieve_record {
         @field = $sth->fetchrow_array ; 
     } ;
     if( $@ ) {
-        $result .= &fail_form( "$@ <P>Query: $stmt" ) ; 
+        $result .= &fail_form( "$@ <P>Executed:<BR>$stmt" ) ; 
     }
     else {
         foreach my $label ( &get_labels ) {
@@ -542,6 +621,41 @@ sub retrieve_record {
     }
 
     $result ;
+}
+
+
+sub get_where {
+
+    my $where  = '' ;
+    my $excess = '' ;
+
+    my $i = -1 ;
+    foreach my $fieldref ( @FIELD ) {
+        $i++ ;
+        next if $fieldref->{-TYPE} and 
+                ( $fieldref->{-TYPE} eq 'hidden' or 
+                  $fieldref->{-TYPE} eq 'submit' ) ;
+                  
+        my $comparison = uc param( "$COMPARISON$i" ) || 'ANY' ;
+        next if $comparison eq 'ANY' ;
+
+        my $field     = $fieldref->{-DB_NAME} ;
+        my $value     = param( "$VALUE$i" )      || '' ;
+        my $connector = uc param( "$CONNECTOR$i" ) || '' ;
+        my $quote     = $fieldref->{-DB_QUOTE} ? "'" : '' ;
+
+        if( $comparison =~ /NULL/o ) {
+            $where .= "$field $comparison $connector " ;
+        }
+        else {
+            $where .= "$field $comparison $quote$value$quote $connector " ;
+        }
+        $excess = $connector ;
+    }
+
+    $where =~ s/(?:AND|OR) $//o ;
+
+    $where ;
 }
 
 
@@ -577,6 +691,37 @@ sub fieldname2label {
 }
 
 
+sub render_field {
+    my( $field, $html ) = @_ ;
+
+    if( $html eq 'mailto' or $html eq 'email' ) {
+        $field = qq{<A HREF="mailto:$field">$field</A>} ;
+    }
+    elsif( $html eq 'url' or $html eq 'web' ) {
+        my $protocol = $field =~ m,^(?:http|ftp|gopher|wais|/), ? 
+                            '' : 'http://' ;
+        $field = qq{<A HREF="$protocol$field">$field</A>} ;
+    }
+    elsif( $html eq 'b' or $html eq 'bold' ) {
+        $field = qq{<B>$field</B>} ;
+    }
+    elsif( $html eq 'i' or $html eq 'italic' ) {
+        $field = qq{<I>$field</I>} ;
+    }
+    elsif( $html eq 'bi' or $html eq 'bolditalic' ) {
+        $field = qq{<B><I>$field</I></B>} ;
+    }
+    elsif( $html eq 'tt' or $html eq 'fixed' ) {
+        $field = qq{<TT>$field</TT>} ;
+    }
+    elsif( $html =~ /^h([1-6])$/o ) {
+        $field = qq{<H$1>$field</H$1>} ;
+    }
+
+    $field ;
+}
+
+ 
 sub get_labels {
     my @label ;
 

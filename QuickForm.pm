@@ -1,6 +1,6 @@
 package CGI::QuickForm ; # Documented at the __END__.
 
-# $Id: QuickForm.pm,v 1.19 1999/10/21 21:24:59 root Exp root $
+# $Id: QuickForm.pm,v 1.20 1999/11/03 20:05:33 root Exp $
 
 require 5.004 ;
 
@@ -15,7 +15,7 @@ use vars qw(
             %Translate 
             ) ;
 
-$VERSION   = '1.53' ; 
+$VERSION   = '1.54' ; 
 
 use Exporter() ;
 
@@ -438,7 +438,16 @@ If no C<-BUTTONS> option array reference is given it will be created with
 C<{ -name =E<lt> 'Submit' }> by default. Note that this option replaces the
 C<-BUTTONLABEL> option. If C<-BUTTONLABEL> is used it will be converted into
 the new form automatically so old scripts will I<not> be broken. However use
-of C<-BUTTONS> is recommended for all new work.
+of C<-BUTTONS> is recommended for all new work. To see which button has been
+pressed you might use code like this in your on_valid_form subroutine:
+
+    if( param( 'New' ) ) {
+        # New pressed
+    }
+    elsif( param( 'Update' ) ) {
+        # Update pressed
+    }
+    # etc.
 
 C<-CHECK> Optional boolean, default is true. When C<show_form> is called it
 will check (i.e. do validation) providing there are parameters (i.e. the user
