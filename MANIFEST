@@ -3,9 +3,9 @@ CHANGES
 MANIFEST
 Makefile.PL
 README
-example1
-example2
-example3
-example4
-example5
+eg/example1
+eg/example2
+eg/example3
+eg/example4
+eg/example5
 t/quickform.t

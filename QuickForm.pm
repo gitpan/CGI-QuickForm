@@ -1,6 +1,6 @@
 package CGI::QuickForm ; # Documented at the __END__.
 
-# $Id: QuickForm.pm,v 1.34 2000/02/18 22:25:33 root Exp root $
+# $Id: QuickForm.pm,v 1.36 2000/03/14 19:48:17 root Exp root $
 
 require 5.004 ;
 
@@ -15,7 +15,7 @@ use vars qw(
             %Translate 
             ) ;
 
-$VERSION   = '1.72' ; 
+$VERSION   = '1.74' ; 
 
 use Exporter() ;
 
@@ -48,6 +48,7 @@ sub show_form {
         -COLUMNS          => undef,
         -BORDER           => 0,
         -CHECK            => 1,
+        -SPACE            => 0,
         -STYLE_FIELDNAME  => '',
         -STYLE_FIELDVALUE => '',
         -STYLE_BUTTONS    => '',
@@ -127,8 +128,8 @@ sub _check_form {
         # We have to write back to the original data, $fieldref only points to
         # a copy.
         my( $valid, $why ) = defined $field{-VALIDATE} ?
-                                  &{$field{-VALIDATE}}( param( $field{-name} ) ) :
-                                  ( 1, '' ) ;
+                                   &{$field{-VALIDATE}}( param( $field{-name} ) ) :
+                                   ( 1, '' ) ;
         $Form{-FIELDS}[$i]{-INVALID} = 1, 
 
         $Form{-FIELDS}[$i]{-WHY}     = 
@@ -166,27 +167,28 @@ sub _check_form {
 
 sub _show_form {
 
-    my $invalid = delete $Form{-INVALID} ;
-    my $why     = delete $Form{-WHY} ;
+    my $invalid  = delete $Form{-INVALID} ;
+    my $why      = delete $Form{-WHY} ;
+    my $n        = delete $Form{-SPACE} ? "\n" : '' ;
 
     if( $Form{-HEADER} ) {
-        print $Form{-HEADER} ;
+        print "$Form{-HEADER}$n" ;
     }
     else {
         print 
             header,
-            start_html( $Form{-TITLE} ),
-            h3( $Form{-TITLE} ),
-            p( $Form{-INTRO} || $Translate{$Form{-LANGUAGE}}{-INTRO} ),
+            start_html( $Form{-TITLE} ), $n,
+            h3( $Form{-TITLE} ), $n,
+            p( $Form{-INTRO} || $Translate{$Form{-LANGUAGE}}{-INTRO} ), $n,
             ;
     }
 
-    print "<span$Form{-STYLE_WHY}>$why</span><br />" if $invalid and defined $why ;
-    print $Translate{$Form{-LANGUAGE}}{-REQUIRED}    if $Form{-REQUIRED} ;
-    print " $Translate{$Form{-LANGUAGE}}{-INVALID}" 
+    print "<span$Form{-STYLE_WHY}>$why</span><br />$n" if $invalid and defined $why ;
+    print "$Translate{$Form{-LANGUAGE}}{-REQUIRED}$n"  if $Form{-REQUIRED} ;
+    print " $Translate{$Form{-LANGUAGE}}{-INVALID}$n" 
     if $invalid and not defined $why ;
 
-    print start_form, qq{<table border="$Form{-BORDER}"$Form{-TABLE_OPTIONS}>} ;
+    print start_form, qq{$n<table border="$Form{-BORDER}"$Form{-TABLE_OPTIONS}>$n} ;
 
     my @hidden ;
 
@@ -204,8 +206,8 @@ sub _show_form {
         my $namestyle  = delete $field{-STYLE_FIELDNAME} ;
         my $valuestyle = delete $field{-STYLE_FIELDVALUE} ;
         my $descstyle  = delete $field{-STYLE_DESC} ;
-        print qq{<tr$rowstyle><td$namestyle>$field{-LABEL}$required$invalid} .
-              qq{</td><td$valuestyle>} ;
+        print qq{<tr$rowstyle>$n<td$namestyle>$field{-LABEL}$required$invalid} .
+              qq{</td>$n<td$valuestyle>} ;
         print "<span$descstyle>$field{-DESC}</span><br />" if $field{-DESC} ;
         delete @field{-LABEL,-VALIDATE,-CLEAN,-SIZE,-MAXLENGTH,-ROWS,-COLUMNS} ;
         no strict "refs" ;
@@ -214,10 +216,10 @@ sub _show_form {
         # Prefer to say why immediately after the field rather than in a
         # separate column.
         print " $why" if $invalid and defined $why ;
-        print "</td></tr>" ;
+        print "</td>$n</tr>$n" ;
     }
 
-    print "</table>", ( ( $Form{-STYLE_BUTTONS} eq 'center' ) ? 
+    print "</table>$n", ( ( $Form{-STYLE_BUTTONS} eq 'center' ) ? 
                         '<center>' : "<span$Form{-STYLE_BUTTONS}>" ) ;
 
     foreach my $fieldref ( @{$Form{-BUTTONS}} ) {
@@ -225,7 +227,7 @@ sub _show_form {
             print defaults( $fieldref->{-name} || 'Clear' ), " " ;
         }
         else {
-            print submit( %$fieldref ), " " ;
+            print $n, submit( %$fieldref ), " " ;
         }
     }
 
@@ -235,10 +237,10 @@ sub _show_form {
         my %field = %$fieldref ;
         delete @field{-LABEL,-VALIDATE,-CLEAN,-SIZE,-MAXLENGTH,-ROWS,-COLUMNS,
                       -TYPE,-REQUIRED,-INVALID,-WHY} ;
-        print hidden( %field ) ;
+        print $n, hidden( %field ) ;
     }
 
-    print end_form ; 
+    print $n, end_form, $n ; 
 
     if( $Form{-FOOTER} ) {
         print $Form{-FOOTER} ;
@@ -334,7 +336,7 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
         my $name = param( 'Name' ) ;
         my $age  = param( 'Age' ) ;
         open PEOPLE, ">>people.tab" ;
-        print "$name\t$age\n" ;
+        print PEOPLE "$name\t$age\n" ;
         close PEOPLE ;
         print header, start_html( 'Test Form Acceptance' ),
             h3( 'Test Form Data Accepted' ),
@@ -363,6 +365,7 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
         -ROWS             => undef,
         -COLUMNS          => undef,
         -CHECK            => 1,
+        -SPACE            => 0, # Output some newlines to assist debugging if 1
         -STYLE_FIELDNAME  => '',
         -STYLE_FIELDVALUE => '',
         -STYLE_BUTTONS    => '',
@@ -682,6 +685,10 @@ example:
 
 C<-STYLE_*> These options apply globally and are documented under Styles
 later.
+
+C<-SPACE> Optional integer. If true then QuickForm will output some newlines
+to help make the HTML more human readable for debugging; otherwise no
+additional whitespace is added. Defaults to false.
  
 C<-FIELDS> Required array reference. This is an array of hashes; there must
 be at least one. The fields are displayed in the order given. The options
@@ -950,7 +957,7 @@ production-quality program: it has no error checking and is I<not> secure.
         my $valid = 1 ;
         # We don't allow (perfectly valid!) names like 'John John'.
         my $why   = 'Not allowed to have identical forename and surname' ;
-        $valid    = 0 if lc $surname eq lc $forename ;
+        $valid    = 0 if lc $rec{'Surname'} eq lc $rec{'Forename'} ;
         ( $valid, $why ) ; # $why is ignored if valid.
     }
 

@@ -18,7 +18,7 @@ $Loaded = 1 ;
 $DEBUG = 1,  shift if @ARGV and $ARGV[0] eq '-d' ;
 $TRIMWIDTH = @ARGV ? shift : 60 ;
 
-report( "loaded module ", 0, '' ) ;
+report( "loaded module ", 0, '', __LINE__ ) ;
 
 
 
@@ -26,9 +26,10 @@ sub report {
     my $test = shift ;
     my $flag = shift ;
     my $e    = shift ;
+    my $line = shift ;
 
     ++$Count ;
-    printf "[%03d] $test(): ", $Count if $DEBUG ;
+    printf "[%03d~%04d] $test(): ", $Count, $line if $DEBUG ;
 
     if( $flag == 0 and not $e ) {
         print "ok $Count\n" ;

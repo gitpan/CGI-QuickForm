@@ -15,6 +15,7 @@ use CGI::QuickForm qw( show_form colour ) ;
 
 
 show_form(
+    -SPACE     => 0,
     -CHECK     => ( query_string() =~ /QFCHK=0/o ? 0 : 1 ), 
     -FOOTER    => qq{<a href="} . 
                  url() . 

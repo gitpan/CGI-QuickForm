@@ -24,7 +24,7 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
         my $name = param( 'Name' ) ;
         my $age  = param( 'Age' ) ;
         open PEOPLE, ">>people.tab" ;
-        print "$name\t$age\n" ;
+        print PEOPLE "$name\t$age\n" ;
         close PEOPLE ;
         print header, start_html( 'Test Form Acceptance' ),
             h3( 'Test Form Data Accepted' ),
@@ -53,6 +53,7 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
         -ROWS             => undef,
         -COLUMNS          => undef,
         -CHECK            => 1,
+        -SPACE            => 0, # Output some newlines to assist debugging if 1
         -STYLE_FIELDNAME  => '',
         -STYLE_FIELDVALUE => '',
         -STYLE_BUTTONS    => '',
@@ -372,6 +373,10 @@ example:
 
 C<-STYLE_*> These options apply globally and are documented under Styles
 later.
+
+C<-SPACE> Optional integer. If true then QuickForm will output some newlines
+to help make the HTML more human readable for debugging; otherwise no
+additional whitespace is added. Defaults to false.
  
 C<-FIELDS> Required array reference. This is an array of hashes; there must
 be at least one. The fields are displayed in the order given. The options
@@ -640,7 +645,7 @@ production-quality program: it has no error checking and is I<not> secure.
         my $valid = 1 ;
         # We don't allow (perfectly valid!) names like 'John John'.
         my $why   = 'Not allowed to have identical forename and surname' ;
-        $valid    = 0 if lc $surname eq lc $forename ;
+        $valid    = 0 if lc $rec{'Surname'} eq lc $rec{'Forename'} ;
         ( $valid, $why ) ; # $why is ignored if valid.
     }
 

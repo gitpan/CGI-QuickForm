@@ -17,6 +17,7 @@ show_form(
     -TITLE         => 'Test Form',
     -ACCEPT        => \&on_valid_form, 
     -TABLE_OPTIONS => 'bgcolor="#EEEEEE"',
+    -SPACE         => 1,
     -FIELDS        => [
         {
             -LABEL    => 'Forename',
