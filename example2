@@ -1,12 +1,12 @@
 #!/usr/bin/perl -Tw
 
-# $Id: quickform,v 1.8 1999/10/16 14:36:38 root Exp $
+# $Id: quickform,v 1.9 1999/11/07 14:12:58 root Exp root $
 
 # Copyright (c) Mark Summerfield 1999. All Rights Reserved.
 # May be used/distributed under the GPL.
 
 # WARNING - this program is provided as an example of QuickForm use and not as
-# an example of production quality CGI code - it is not secure. 
+# an example of production quality CGI code - it may not be secure. 
 
 use strict ;
 

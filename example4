@@ -6,7 +6,11 @@
 # May be used/distributed under the GPL.
 
 # WARNING - this program is provided as an example of QuickForm use and not as
-# an example of production quality CGI code - it is not secure. 
+# an example of production quality CGI code - it may not be secure. 
+
+# This example is just under 750 lines - a functionally identical version is
+# provided as example1 with CGI::QuickData.pm which is under 200 lines
+# (because all the 'donkey work' is done by CGI::QuickData.pm.) 
 
 # Set $SHOW_SQL = 1 to see the SQL being executed.
 

@@ -1,20 +1,25 @@
 #!/usr/bin/perl -w
 
-# $Id: linux-help,v 1.14 1999/10/16 14:36:38 root Exp $
+# $Id: linux-help,v 1.17 1999/11/15 20:20:43 root Exp root $
 
 # Copyright (c) Mark Summerfield 1999. All Rights Reserved.
 # May be used/distributed under the GPL.
 
-# WARNING - this program is provided as an example of QuickForm use and not as
-# an example of production quality CGI code - it is not secure. 
+# WARNING - linux-help is provided as an example of QuickForm use, (although
+# I now use it instead of dwww), and it may not be secure. 
 
-# NOTE - this program has hard-coded paths for a Debian Linux system - your
-# paths may/will differ. It has only ever been run as root on a local system -
-# multi-user use is not supported (since I do no record locking), in other
-# words its only for a single person to use. This program also uses the
-# undocumented colour() function from QuickForm. 
+# NOTE - linux-help has hard-coded paths for a Debian Linux system - your
+# paths may/will differ. See "CHANGE THESE FOR YOUR LOCAL SYSTEM" for the
+# paths that you will need to change. linux-help itself should be placed in
+# your cgi-bin directory and made executable.
+
+# linux-help has only ever been run as root on a local system - multi-user use
+# is not supported (since I do no record locking), in other words its only for
+# a single person to use. This program also uses the undocumented colour()
+# function from QuickForm. (This is one of CGI::QuickForm's example programs.)
 
 # TODO Configure option, e.g. to add/del paths to/from $Data{"$PREFIX PATH"}
+#      so that hard-coding is not necessary
 # TODO Cache page searches, i.e. cache lists of links?
 # TODO Keyword searching
 
@@ -30,14 +35,31 @@ use HTML::Entities ;
 use Storable qw( freeze thaw ) ;
 use URI::Escape ;
 
-use vars qw( $VERSION ) ; $VERSION = '1.00' ;
+use vars qw( $VERSION ) ; $VERSION = '1.02' ;
 
 use vars qw( $URL $PREDEFINED_PAGES ) ;
 
-$| = 1 ; # Autoflush.
 
-my $DB_FILE      = '/root/web/db/linux-help.db' ;
-# See initialise for initial paths.
+################### CHANGE THESE FOR YOUR LOCAL SYSTEM ##############
+
+# This is the db file where linux-help stores its configuration info - it must
+# be rw by linux-help running as a CGI script.
+my $DB_FILE   = '/root/web/db/linux-help.db' ;
+
+# Change these to reflect your local situation; multiple paths are supported
+# separated by colons in the usual way.
+my $PATH_DOC  = "/usr/doc" ;
+my $PATH_INFO = "/usr/info" ;
+my $PATH_MAN  = "/usr/man:/usr/X11R6/man" ;
+my $PATH_POD  = "/usr/doc/perl5:/usr/doc:/usr/lib/perl5:/root/lib" ;
+
+# This must be rw by this script.
+my $TMP       = '/tmp' ;
+
+################### END OF LOCAL CHANGES ############################
+
+
+$| = 1 ; # Autoflush.
 
 my $TITLE        = 'Linux Help' ;
 my $SEARCH       = 'Search' ;
@@ -47,7 +69,7 @@ my $PREV_TERM    = 'Prev Term' ;
 my $PREV_PAGE    = 'Prev Page' ;
 my $NEW_KEYWORD  = 'New Keyword' ;
 my $SEARCH_PAGES = 'Search Pages' ;
-my $SEARCH_FOR   = 'Search For' ;
+my $SEARCH_FOR   = 'Search/Show' ;
 my $IGNORE_CASE  = 'Ignore Case' ;
 my $DEL_PAGE     = 'Del Page' ;
 my $DEL_PAGES    = 'Del Pages' ;
@@ -85,12 +107,17 @@ else {
     my $footer = $PREDEFINED_PAGES ; 
     #$footer .= hr . &show_config ;
     my @pages  = sort @{ thaw( $Data{"$PREFIX PAGETYPE"} ) } ;
+    my $font   = "font-family:Helvetica;" ;
+    my $weight = "font-weight:900;" ;
 
     show_form(
             -TITLE  => $TITLE,
-            -HEADER => header() . start_html( $TITLE ) . h3( $TITLE ),
+            -HEADER => header() . start_html( $TITLE ) . h2( $TITLE ),
             -FOOTER => $footer,
             -ACCEPT => \&on_valid_form,
+            -STYLE_FIELDNAME  => qq{style="${font}${weight}"},
+            -STYLE_FIELDVALUE => qq{style="$font"},
+            -STYLE_BUTTONS    => qq{style="${font}${weight}text-align:center;"},
             -FIELDS => [
                 {
                     -LABEL      => $PREV_PAGE,
@@ -129,11 +156,12 @@ else {
                 },
             ],
             -BUTTONS => [ 
-                { -name => $SEARCH },
+                { -name => $SEARCH_FOR },
                 { -name => $DEL_PAGE },
                 { -name => $DEL_PAGES },
                 { -name => $DEL_TERM }, 
                 { -name => $DEL_TERMS }, 
+                { -name => 'Clear', -DEFAULTS => 1 }, 
                 ],
             # If eventually we want to offer configuration we'll add the options
             # as fields and add a Configure button.
@@ -213,7 +241,7 @@ sub show_file {
             print "<PRE>" ;
             my $temp = $file ;
             $temp =~ s,.+/,,o ;
-            $temp = "/tmp/$temp.cache" ;
+            $temp = "$TMP/$temp.cache" ;
             &full_system( "man -l $file > $temp" ) ;
             my $i = 0 ;
             sleep 1 while not -e $temp and $i++ < $TIMEOUT ;
@@ -345,6 +373,20 @@ sub on_valid_form {
         elsif( param( $PREV_PAGE ) ) {
             &show_file( $Show{ param( $PREV_PAGE ) } ) ;
         }
+        else {
+            print 
+                header,
+                start_html( $TITLE ),
+                h2( $TITLE ),
+                h3( colour( 'RED', "Invalid search/show" ) ),
+                p( "Did you choose a $PREV_TERM without checking the $PREV_TERM " .
+                   "check box?" ),
+                ;
+            
+            &new_search ;
+
+            print end_html ;
+         }
     }
 }
 
@@ -523,11 +565,10 @@ sub initialise {
         $Data{"$PREFIX MAX_TERMS"}   = 16 ;
 
         $Data{"$PREFIX PATH"} = freeze( {
-            doc  => "/usr/doc",
-            info => "/usr/info",
-            man  => "/usr/man:/usr/X11R6/man",
-            pod  => "/usr/doc/perl5:/usr/doc:/usr/lib/perl5:" .
-                    "/root/lib:/dos/Perl/html",
+                                    doc  => $PATH_DOC,
+                                    info => $PATH_INFO,
+                                    man  => $PATH_MAN,
+                                    pod  => $PATH_POD,
                                     } ) ;
 
         $Data{"$PREFIX PAGETYPE"} = 
@@ -591,17 +632,17 @@ man 1p\&nbsp;\&nbsp;Perl Functions</A><BR>
 <A HREF="$URL?type=man\&term=1x.">
 man 1x\&nbsp;\&nbsp;X Executable programs or shell commands</A><BR>
 <A HREF="$URL?type=man\&term=2.">
-man 2\&nbsp;\&nbsp;\&nbsp;System calls (functions provided by the kernel)</A><BR>
+man 2\&nbsp;\&nbsp;\&nbsp;System calls</A> (functions provided by the kernel)<BR>
 <A HREF="$URL?type=man\&term=3.">
-man 3\&nbsp;\&nbsp;\&nbsp;Library calls (functions within system libraries)</A><BR>
+man 3\&nbsp;\&nbsp;\&nbsp;Library calls</A> (functions within system libraries)<BR>
 <A HREF="$URL?type=man\&term=3paper">
 man 3paper\&nbsp;Paper related</A><BR>
 <A HREF="$URL?type=man\&term=3pm.">
 man 3pm\&nbsp;Perl Modules</A><BR>
 <A HREF="$URL?type=man\&term=4.">
-man 4\&nbsp;\&nbsp;\&nbsp;Special files (usually found in /dev)</A><BR>
+man 4\&nbsp;\&nbsp;\&nbsp;Special files</A> (usually found in /dev)<BR>
 <A HREF="$URL?type=man\&term=5.">
-man 5\&nbsp;\&nbsp;\&nbsp;File formats and conventions eg /etc/passwd</A><BR>
+man 5\&nbsp;\&nbsp;\&nbsp;File formats and conventions</A> eg /etc/passwd<BR>
 <A HREF="$URL?type=man\&term=5vga.">
 man 5vga\&nbsp;VGA File formats and conventions</A><BR>
 <A HREF="$URL?type=man\&term=5x.">
@@ -609,11 +650,11 @@ man 5x\&nbsp;\&nbsp;X File formats and conventions</A><BR>
 <A HREF="$URL?type=man\&term=6.">
 man 6\&nbsp;\&nbsp;\&nbsp;Games</A><BR>
 <A HREF="$URL?type=man\&term=7.">
-man 7\&nbsp;\&nbsp;\&nbsp;Macro packages and conventions eg man(7), groff(7).</A><BR>
+man 7\&nbsp;\&nbsp;\&nbsp;Macro packages and conventions</A> eg man(7), groff(7)<BR>
 <A HREF="$URL?type=man\&term=7vga.">
 man 7vga\&nbsp;VGA Macro packages and conventions</A><BR>
 <A HREF="$URL?type=man\&term=8.">
-man 8\&nbsp;\&nbsp;\&nbsp;System administration commands (usually only for root)</A><BR>
+man 8\&nbsp;\&nbsp;\&nbsp;System administration commands</A> (usually only for root)<BR>
 <A HREF="$URL?type=man\&term=9.">
 man 9\&nbsp;\&nbsp;\&nbsp;Kernel routines</A><BR>
 <HR>
@@ -625,9 +666,63 @@ __EOT__
 __END__
 
 
-=head1 linux-help
+=head1 NAME
 
-This program provides a single source of help for linux systems. It will
-search for and render man pages, info pages and perl pod pages, as well as any
-html pages you want.
+linux-help - CGI program for looking up help text, e.g. man and info pages on localhost
+
+=head1 DESCRIPTION
+
+A single source for looking up help via a browser on linux systems. 
+
+It will search for and render man pages, info pages and perl pod pages, as
+well as any html pages you want. It is slower than systems like dwww because
+it doesn't cache and searches dynamically - but you never have to update
+anything or pre-index because of this dynamism.
+
+(Note that if you enter a New Term you don't have to change Search/Show to New
+Term - linux-help will figure it out.)
+
+You will need to place linux-help in your cgi-bin directory and change the
+\$DB_FILE file to a path and filename of your choice. Non-Debian users will
+have to change the paths stored in the \$PATH_* variables. See the beginning
+of the code for these.
+
+=head1 README
+
+CGI program for looking up help text, e.g. man, info and pod pages on localhost.
+It is slower than systems like dwww because
+it doesn't cache and searches dynamically - but you never have to update
+anything or pre-index because of this dynamism.
+
+=head1 PREREQUISITES
+
+C<strict>
+C<CGI>
+C<CGI::QuickForm>
+C<DB_File> 
+C<Fcntl>
+C<File::Find>
+C<HTML::Entities>
+C<Storable>
+C<URI::Escape>
+
+=head1 COREQUISITES
+
+=head1 COPYRIGHT
+
+Copyright (c) Mark Summerfield 1999. All Rights Reserved.
+May be used/distributed under the GPL.
+Email <summer@chest.ac.uk> with 'linux-help' in the subject line.
+
+=head1 OSNAMES
+
+Linux
+
+=head1 SCRIPT CATEGORIES
+
+CGI
+Web
+
+=cut
+
 

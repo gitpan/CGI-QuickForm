@@ -1,6 +1,20 @@
+1999/11/23
+
+Added ability to create a button which resets the form to its default values.
+(See -DEFAULTS option of -BUTTONS). 
+
+Added user-definable styles (or classes) with the options:
+-STYLE_FIELDNAME, -STYLE_FIELDVALUE and -STYLE_BUTTONS.
+
+Thanks to Alex Bransby-Williams for the suggestions.
+
+Updated linux-help (example3) to show these options in practice.
+
+
 1999/11/03
 
 Minor documentation clarification regarding -BUTTONS.
+
 
 1999/10/21
 
@@ -10,9 +24,11 @@ section.
 Added a fourth example - this one shows how to use QuickForm with DBI to
 provide simple add/edit/delete/list records. 
 
+
 1999/10/19
 
 Bug fix: no longer show labels for hidden fields.
+
 
 1999/10/16
 
@@ -24,6 +40,7 @@ Added 3 (barely documented!) example scripts - they are not "production
 quality", and are provided solely to show various approaches to using
 QuickForm.
 
+
 1999/10/03
 
 If the user enters invalid data we flagged it with * but that was it. Now you
@@ -32,11 +49,13 @@ to the right of any invalid fields. This is achieved by returning a two
 element array from your validation routines. (Existing code will work fine so
 no need to change anything.) See the pod for examples.
 
+
 1999/09/26
 
 Bug fixes on the -CLEAN option; documentation corrections, e.g. to the
 &cleanup example. Added a new option: you can now have as many buttons as you
 want using the new -BUTTONS option. Again thanks to Paul for the suggestion.
+
 
 1999/09/22
 
@@ -45,14 +64,17 @@ field that has been validated (providing the whole form is valid) to clean it
 up, e.g. make it all upper case or delete spurious whitespace, etc. Thanks to
 Paul Johnston for the suggestion.
 
+
 1999/09/21
 
 Corrected documentation error. 
+
 
 1999/09/17
 
 Added -LANGUAGE options 'fr' (french) and 'de' (german) - translation was by
 Babelfish so it they're wrong please let me know!
+
 
 1999/09/16  
 
@@ -67,18 +89,22 @@ Instead of calling QuickForm::run, you now call show_form. (This is because of
 a mistake made in earlier versions regarding QuickForm's package which has now
 been corrected. Sorry for this inconvenience.)
 
+
 1999/09/15  
 
 Now use language of 'en' for english (although 'english' is supported for
 backward compatibility). 
 
+
 1999/09/01  
 
 Corrected Makefile.PL plus minor improvements to the code and documentation.
 
+
 1999/08/28  
 
 Version 1.00.
+
 
 1999/08/24  
 

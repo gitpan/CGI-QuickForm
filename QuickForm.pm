@@ -1,6 +1,6 @@
 package CGI::QuickForm ; # Documented at the __END__.
 
-# $Id: QuickForm.pm,v 1.20 1999/11/03 20:05:33 root Exp $
+# $Id: QuickForm.pm,v 1.22 1999/11/23 22:34:43 root Exp root $
 
 require 5.004 ;
 
@@ -15,7 +15,7 @@ use vars qw(
             %Translate 
             ) ;
 
-$VERSION   = '1.54' ; 
+$VERSION   = '1.55' ; 
 
 use Exporter() ;
 
@@ -35,19 +35,22 @@ my %Record ;
 
 sub show_form {
     %Record = (
-        -LANGUAGE    => 'en',         # Language to use for default messages
-        -TITLE       => 'Quick Form', # Default page title and heading
-        -HEADER      => undef,      
-        -FOOTER      => undef,
-        -ACCEPT      => \&_on_valid_form,
-        -VALIDATE    => undef,        # Call this to validate entire record
-        -SIZE        => undef,
-        -MAXLENGTH   => undef,
-        -ROWS        => undef,
-        -COLUMNS     => undef,
-        -CHECK       => 1,
-        -FIELDS      => [ { -LABEL => 'No Fields Specified' } ],
-        -BUTTONS     => [ { -name  => 'Submit' } ], # Default button
+        -LANGUAGE         => 'en',         # Language to use for default messages
+        -TITLE            => 'Quick Form', # Default page title and heading
+        -HEADER           => undef,      
+        -FOOTER           => undef,
+        -ACCEPT           => \&_on_valid_form,
+        -VALIDATE         => undef,        # Call this to validate entire record
+        -SIZE             => undef,
+        -MAXLENGTH        => undef,
+        -ROWS             => undef,
+        -COLUMNS          => undef,
+        -CHECK            => 1,
+        -STYLE_FIELDNAME  => '',
+        -STYLE_FIELDVALUE => '',
+        -STYLE_BUTTONS    => '',
+        -FIELDS           => [ { -LABEL => 'No Fields Specified' } ],
+        -BUTTONS          => [ { -name  => 'Submit' } ], # Default button
         @_,
         ) ;
 
@@ -173,7 +176,8 @@ sub _show_form {
         my $invalid  = delete $field{-INVALID} ;
         $invalid     = $invalid ? $INVALID : '' ;
         my $why      = delete $field{-WHY} ;
-        print "<TR><TD>$field{-LABEL}$required$invalid</TD><TD>" ;
+        print qq{<TR><TD $Record{-STYLE_FIELDNAME}>$field{-LABEL}$required$invalid} .
+              qq{<TD $Record{-STYLE_FIELDVALUE}>} ;
         delete @field{-LABEL,-VALIDATE,-CLEAN,-SIZE,-MAXLENGTH,-ROWS,-COLUMNS} ;
         no strict "refs" ;
         local $^W = 0 ; # Switch off moans about undefined values.
@@ -181,14 +185,21 @@ sub _show_form {
         # Prefer to say why immediately after the field rather than in a
         # separate column.
         print " $why" if $invalid and defined $why ;
-        print "</TD></TR>" ;
+        print "</TR>" ;
     }
 
-    print "</TABLE>" ;
+    print "</TABLE><SPAN $Record{-STYLE_BUTTONS}>" ;
 
     foreach my $fieldref ( @{$Record{-BUTTONS}} ) {
-        print submit( %$fieldref ), " " ;
+        if( $fieldref->{-DEFAULTS} ) {
+            print defaults( $fieldref->{-name} || 'Clear' ), " " ;
+        }
+        else {
+            print submit( %$fieldref ), " " ;
+        }
     }
+
+    print "</SPAN>" ;
 
     foreach my $fieldref ( @hidden ) {
         my %field = %$fieldref ;
@@ -303,18 +314,21 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
     use CGI::QuickForm ;
 
     show_form(
-        -ACCEPT      => \&on_valid_form, 
-        -FOOTER      => undef,
-        -HEADER      => undef,      
-        -LANGUAGE    => 'en',
-        -TITLE       => 'Test Form',
-        -VALIDATE    => undef,       # Set this to validate the entire record
-        -SIZE        => undef,
-        -MAXLENGTH   => undef,
-        -ROWS        => undef,
-        -COLUMNS     => undef,
-        -CHECK       => 1,
-        -FIELDS      => [            
+        -ACCEPT           => \&on_valid_form, 
+        -FOOTER           => undef,
+        -HEADER           => undef,      
+        -LANGUAGE         => 'en',
+        -TITLE            => 'Test Form',
+        -VALIDATE         => undef,       # Set this to validate the entire record
+        -SIZE             => undef,
+        -MAXLENGTH        => undef,
+        -ROWS             => undef,
+        -COLUMNS          => undef,
+        -CHECK            => 1,
+        -STYLE_FIELDNAME  => '',
+        -STYLE_FIELDVALUE => '',
+        -STYLE_BUTTONS    => '',
+        -FIELDS           => [            
             { 
                 -LABEL     => 'Name', 
                 -REQUIRED  => undef,
@@ -374,11 +388,12 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
             },
             # Any other CGI.pm field can be used in the same way.
         ],
-        -BUTTONS    => [
+        -BUTTONS          => [
             { -name => 'Add'    },
             { -name => 'Edit'   },
             { -name => 'List'   },
             { -name => 'Remove' },
+            { -name => 'Clear', -DEFAULTS => 1 },
         ],
     ) ;
  
@@ -430,9 +445,14 @@ defined as an anonymous hash, e.g.
 although any other legitimate C<CGI.pm> options may also be given, e.g.
 
     -BUTTONS    => [
-        { -name => 'New',   -value => 'BUTTON_NEW'    },
-        { -name => 'Update' -value => 'BUTTON_UPDATE' },
+        { -name => 'New',    -value => 'BUTTON_NEW'    },
+        { -name => 'Update', -value => 'BUTTON_UPDATE' },
         ],
+
+If you want a button which resets the form to its default values then create
+an entry like this:
+
+    { -name => 'Clear', -DEFAULTS => 1 },
 
 If no C<-BUTTONS> option array reference is given it will be created with
 C<{ -name =E<lt> 'Submit' }> by default. Note that this option replaces the
@@ -698,6 +718,24 @@ C<-default>, C<-size> and C<-maxlength>; you may use any, all or none of them
 since C<CGI.pm> always provides sensible defaults. See "All QuickForm options"
 in the SYNOPSIS above for examples of the most common field types.
 
+=head2 Styles
+
+If you wish to use a cascading style sheet with QuickForm then you need to set
+the -HEADER option to include a <LINK> tag which includes a reference to your
+stylesheet.
+
+Whether you use a stylesheet for classes or in-line styles you can set the
+class or style using the -STYLE_* options, e.g.
+
+    -STYLE_FIELDNAME  => qq{style="font-size:12pt;margin:2em;"},
+    -STYLE_FIELDVALUE => qq{class="mystyle.css"},
+    -STYLE_BUTTONS    => qq{style="font-family:Helvetica;text-align:center;"},
+
+See example3 (linux-help) for more examples.
+
+You can of course also apply your own global styles to the existing tags in
+the normal way.
+
 =head2 EXAMPLE #1: Using a form to generate email 
 
 This program is provided as an example of QuickForm's capabilities, it is not a
@@ -834,6 +872,8 @@ None that have come to light (yet).
 
 Mark Summerfield. I can be contacted as <summer@chest.ac.uk> -
 please include the word 'quickform' in the subject line.
+
+See CHANGES for acknowledgements.
 
 =head1 COPYRIGHT
 
