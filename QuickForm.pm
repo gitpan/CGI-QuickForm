@@ -1,6 +1,6 @@
-package QuickForm ; # Documented at the __END__.
+package CGI::QuickForm ; # Documented at the __END__.
 
-# $Id: QuickForm.pm,v 1.3 1999/09/01 21:18:08 root Exp root $
+# $Id: QuickForm.pm,v 1.6 1999/09/16 19:06:02 root Exp root $
 
 require 5.004 ;
 
@@ -15,29 +15,36 @@ use vars qw(
             %String 
             ) ;
 
-$VERSION = '1.02' ; 
+$VERSION = '1.10' ; 
 
 use Exporter() ;
 
 @ISA    = qw( Exporter ) ;
 
-@EXPORT = qw( run ) ;
+@EXPORT = qw( show_form ) ;
 
 my %Record ;
 
 
-sub run {
+sub show_form {
     %Record = (
-        -LANGUAGE    => 'english',    # Language to use for default messages
+        -LANGUAGE    => 'en',         # Language to use for default messages
         -BUTTONLABEL => 'Submit',     # Default submit button text
         -TITLE       => 'Quick Form', # Default page title and heading
         -HEADER      => undef,      
         -FOOTER      => undef,
         -ACCEPT      => \&_on_valid_form,
         -VALIDATE    => undef,      # Call this to validate entire record
+        -SIZE        => undef,
+        -MAXLENGTH   => undef,
+        -ROWS        => undef,
+        -COLUMNS     => undef,
         -FIELDS      => [ { -LABEL => 'No Fields Specified' } ],
         @_,
         ) ;
+
+    # Backward compatibility.
+    $Record{-LANGUAGE} = 'en' if $Record{-LANGUAGE} eq 'english' ;
 
     $Record{-REQUIRED} = 0 ; # Assume no fields are required.
 
@@ -50,6 +57,22 @@ sub run {
         $Record{-FIELDS}[$i]{-name}  = $field{-LABEL} unless $field{-name} ;
         $Record{-FIELDS}[$i]{-TYPE}  = 'textfield'    unless $field{-TYPE} ;
         $Record{-REQUIRED}           = 1              if $field{-REQUIRED} ;
+        if( $Record{-FIELDS}[$i]{-TYPE} eq 'textfield' ) { 
+            if( $Record{-SIZE} and not $field{-size} ) {
+                $Record{-FIELDS}[$i]{-size} = $Record{-SIZE} ;
+            }
+            if( $Record{-MAXLENGTH} and not $field{-maxlength} ) {
+                $Record{-FIELDS}[$i]{-maxlength} = $Record{-MAXLENGTH} ;
+            }
+        }
+        elsif( $Record{-FIELDS}[$i]{-TYPE} eq 'textarea' ) { 
+            if( $Record{-ROWS} and not $field{-rows} ) {
+                $Record{-FIELDS}[$i]{-rows} = $Record{-ROWS} ;
+            }
+            if( $Record{-COLUMNS} and not $field{-columns} ) {
+                $Record{-FIELDS}[$i]{-columns} = $Record{-COLUMNS} ;
+            }
+        }
         $i++ ;
     }
 
@@ -111,8 +134,8 @@ sub _show_form {
             ;
     }
 
-    print $String{$Record{-LANGUAGE}}{-REQUIRED} if $Record{-REQUIRED} ;
-    print " ", $String{$Record{-LANGUAGE}}{-INVALID} if $invalid ;
+    print $String{$Record{-LANGUAGE}}{-REQUIRED}   if $Record{-REQUIRED} ;
+    print " $String{$Record{-LANGUAGE}}{-INVALID}" if $invalid ;
 
     print start_form, qq{<TABLE BORDER="0">} ;
 
@@ -160,11 +183,11 @@ sub _on_valid_form {
 
 BEGIN {
 
-    $REQUIRED = "<B><FONT COLOR='BLUE'>+</FONT></B>" ;
-    $INVALID  = "<B><FONT COLOR='RED'>*</FONT></B>" ;
+    $REQUIRED = '<B><FONT COLOR="BLUE">+</FONT></B>' ;
+    $INVALID  = '<B><FONT COLOR="RED">*</FONT></B>' ;
 
     %String = (
-        english => {
+        'en' => {
             -INTRO    => "Please enter the information.",
             -REQUIRED => "Fields marked with $REQUIRED are required.",
             -INVALID  => "Fields marked with $INVALID contain errors " .
@@ -192,7 +215,7 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
     use CGI qw( :standard :html3 ) ;
     use CGI::QuickForm ;
 
-    QuickForm::run(
+    show_form(
         -ACCEPT => \&on_valid_form, # You must supply this subroutine.
         -TITLE  => 'Test Form',
         -FIELDS => [
@@ -220,15 +243,19 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
     use CGI qw( :standard :html3 ) ;
     use CGI::QuickForm ;
 
-    QuickForm::run(
+    show_form(
         -ACCEPT      => \&on_valid_form, 
         -BUTTONLABEL => 'Submit',
         -FOOTER      => undef,
         -HEADER      => undef,      
-        -LANGUAGE    => 'english',
+        -LANGUAGE    => 'en',
         -TITLE       => 'Test Form',
         -VALIDATE    => undef,       # Set this to validate the entire record
-        -FIELDS      => [            # (see examples later)
+        -SIZE        => undef,
+        -MAXLENGTH   => undef,
+        -ROWS        => undef,
+        -COLUMNS     => undef,
+        -FIELDS      => [            
             { 
                 -LABEL     => 'Name', 
                 -REQUIRED  => undef,
@@ -288,10 +315,10 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
 
 =head1 DESCRIPTION
 
-C<QuickForm::run>, provides a quick and simple mechanism for providing on-line
-CGI forms.
+C<show_form>, provides a quick and simple mechanism for providing on-line CGI
+forms.
 
-When QuickForm::run executes it presents the form with the fields requested.
+When C<show_form> executes it presents the form with the fields requested.
 As you can see from the minimal example at the beginning of the synopsis it
 will default everything it possibly can to get you up and running as quickly
 as possible.
@@ -328,10 +355,10 @@ C<-FOOTER> Optional string. This is used to present any text following the
 form and if used it must include everything up to and including final
 "</HTML>", e.g.:
 
-    my $footer = p( "Thank's for your efforts." ),
-                 h6( "Copyright (c) 1999 Summer plc" ), end_html ;
+    my $footer = p( "Thank's for your efforts." ) .
+                 h6( "Copyright (c) 1999 Summer plc" ) . end_html ;
 
-    QuickForm::run(
+    show_form(
         -FOOTER => $footer,
         # etc
 
@@ -339,21 +366,21 @@ C<-HEADER> Optional string. This is used to present your own title and text
 before the form proper. If you use this it must include everything from
 "Content-type: text/html" onwards. For example:
 
-    my $header = header, start_html( "This is my Title" ),
-                 h2( "My new Form" ), p( "Please answer the questions!" ) ;
+    my $header = header . start_html( "This is my Title" ) .
+                 h2( "My new Form" ) . p( "Please answer the questions!" ) ;
 
-    QuickForm::run(
+    show_form(
         -HEADER => $header,
         # etc
 
 C<-LANGUAGE> Optional string. This option only has one valid setting,
-'english'. If people provide me with translations I will add other languages.
-This is used for the presentation of messages to the user, e.g.:
+'en' (english). If people provide me with translations I will add other
+languages. This is used for the presentation of messages to the user, e.g.:
 
     Please enter the information.
     Fields marked with + are required.
     Fields marked with * contain errors or are empty.
- 
+
 C<-TITLE> Required string (unless you use C<-HEADER>). This is used as the
 form's title and as a header on the form's page - unless you use the
 C<-HEADER> option (see above) in which case this option is ignored.
@@ -375,6 +402,50 @@ Typically it may have this structure:
         $valid ; # Return the valid variable which may now be false.
     }
 
+C<-COLUMNS> Optional integer. If set then any C<-TYPE =E<gt> textarea> will
+have a C<-columns> set to this value unless an explicit C<-columns> is given.
+
+C<-MAXLENGTH> Optional integer. If set then any C<-TYPE =E<gt> textfield> will
+have a C<-maxlength> set to this value unless an explicit C<-maxlength> is given.
+
+C<-ROWS> Optional integer. If set then any C<-TYPE =E<gt> textarea> will
+have a C<-rows> set to this value unless an explicit C<-rows> is given.
+
+C<-SIZE> Optional integer. If set then any C<-TYPE =E<gt> textfield> will
+have a C<-size> set to this value unless an explicit C<-size> is given. For
+example:
+
+     show_form(
+        -ACCEPT => \&on_valid_form, # You must supply this subroutine.
+        -TITLE  => 'Test Form',
+        -SIZE   => 50,
+        -FIELDS => [
+            { -LABEL => 'Name', },  
+            { -LABEL => 'Age',  }, 
+        ],
+    ) ;
+    # Both the fields will be textfields because that is the default and both
+    # will have a -size of 50.
+
+
+    show_form(
+        -ACCEPT    => \&on_valid_form, # You must supply this subroutine.
+        -TITLE     => 'Test Form',
+        -SIZE      => 50,
+        -MAXLENGTH => 70,
+        -FIELDS => [
+            { -LABEL => 'Name', },  
+            { -LABEL => 'Age',  }, 
+            { 
+                -LABEL => 'Country',  
+                -size  => 20,
+            }, 
+        ],
+    ) ;
+    # All three fields will be textfields. Name and Age will have a -size of
+    # 50 but Country will have a -size of 20. All three will have a -maxlength
+    # of 70.
+ 
 C<-FIELDS> Required array reference. This is an array of hashes; there must
 be at least one. The fields are displayed in the order given. The options
 available in each field hash are covered in the next section.
@@ -422,7 +493,7 @@ production-quality program: it has no error checking and is I<not> secure.
     use CGI qw( :standard :html3 ) ;
     use CGI::QuickForm ;
 
-    QuickForm::run(
+    show_form(
         -TITLE  => 'Test Form',
         -ACCEPT => \&on_valid_form, 
         -FIELDS => [
@@ -471,24 +542,28 @@ production-quality program: it has no error checking and is I<not> secure.
     use CGI qw( :standard :html3 ) ;
     use CGI::QuickForm ;
 
-    QuickForm::run(
-        -TITLE    => 'Test Form',
-        -ACCEPT   => \&on_valid_form, 
-        -VALIDATE => \&valid_form,
+    show_form(
+        -TITLE     => 'Test Form',
+        -ACCEPT    => \&on_valid_form, 
+        -VALIDATE  => \&valid_form,
+        -SIZE      => 40,
+        -MAXLENGTH => 60,
         -FIELDS => [
             {
-                -LABEL    => 'Forename',
-                -VALIDATE => \&valid_name,
+                -LABEL     => 'Forename',
+                -VALIDATE  => \&valid_name,
             },
             {
-                -LABEL    => 'Surname',
-                -VALIDATE => \&valid_name,
+                -LABEL     => 'Surname',
+                -VALIDATE  => \&valid_name,
             },
             {
-                -LABEL    => 'Age',
+                -LABEL     => 'Age',
                 # &mk_valid_number generates a subroutine (a closure) and
                 # returns a reference to that subroutine.
-                -VALIDATE => &mk_valid_number( 3, 130 ), 
+                -VALIDATE  => &mk_valid_number( 3, 130 ), 
+                -size      => 10,
+                -maxlength => 3,
             },
         ],
     ) ;
@@ -542,6 +617,19 @@ None that have come to light (yet).
 
 1999/09/01  Corrected Makefile.PL plus minor improvements to the code and
             documentation.
+
+1999/09/15  Now use language of 'en' for english (although 'english' is
+            supported for backward compatibility). 
+
+1999/09/16  Corrected some documentation errors. Added some new options so
+            that you can default the size of every textfield and textarea (but
+            still override the defaults individually of course), see the -SIZE,
+            -MAXLENGTH, -ROWS and -COLUMNS options. 
+            INCOMPATIBLE CHANGE: Instead of calling QuickForm::run, you now
+            call show_form. (This is because of a mistake made in earlier
+            versions regarding QuickForm's package which has now been
+            corrected. Sorry for this inconvenience.)
+
 
 =head1 AUTHOR
 
