@@ -12,7 +12,7 @@
 
 use strict ;
 
-use vars qw( $VERSION ) ; $VERSION = '0.12' ;
+use vars qw( $VERSION ) ; $VERSION = '0.13' ;
 
 use CGI qw( :standard :html3 ) ;
 use lib '.' ; # This is 'cos my host provider hasn't installed QuickForm!
@@ -20,14 +20,20 @@ use CGI::QuickForm ;
 
 my $TITLE = 'Bicycle Form' ;
 
+sub my_header {
+    print 
+	header . start_html( $TITLE ) .
+	h3( $TITLE ) .
+	p( 'This is a test form that uses code refs for its header. ' .
+	   'Any data entered is discarded.' ) ;
+}
+
+
 show_form(
     -LANGUAGE         => 'user',
     -USER_REQUIRED    => 'Put the data here: ~R~ OK!<br />',
     -USER_INVALID     => "I don't mean to be rude but look at these ~I~ fields!",
-    -HEADER           => header . start_html( $TITLE ) .
-                         h3( $TITLE ) .
-                         p( 'This is a test form. ' .
-                            'Any data entered is discarded.' ),
+    -HEADER           => \&my_header,
     -VALIDATE         => \&valid_form, # Form validation
 #    -ACCEPT           => \&on_valid_form_redirect,
     -ACCEPT           => \&on_valid_form,

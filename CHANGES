@@ -1,3 +1,11 @@
+2002/04/30
+
+J Joseph Felten wanted to pass code references to -FOOTER and -HEADER
+and have them called to produce the relevant output. This has been
+implemented. You can still pass strings with the same behaviour as
+usual.
+
+
 2001/07/31
 
 Lary Ecker <lary@bigfoot.com> provided a hebrew translation for the

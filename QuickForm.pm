@@ -1,6 +1,6 @@
 package CGI::QuickForm ; # Documented at the __END__.
 
-# $Id: QuickForm.pm,v 1.70 2001/07/31 18:18:34 mark Exp mark $
+# $Id: QuickForm.pm,v 1.71 2002/04/30 11:20:03 mark Exp mark $
 
 require 5.004 ;
 
@@ -14,7 +14,7 @@ use vars qw(
             %Translate 
             ) ;
 
-$VERSION = '1.92' ; 
+$VERSION = '1.93' ; 
 
 use Exporter() ;
 
@@ -200,7 +200,12 @@ sub _show_form {
     my $n       = delete $formref->{-SPACE} ? "\n" : '' ;
 
     if( $formref->{-HEADER} ) {
-        print "$formref->{-HEADER}$n" ;
+	if ( ref $formref->{-HEADER} eq 'CODE' ) {
+	    &{$formref->{-HEADER}} ;
+	}
+	else {
+	    print "$formref->{-HEADER}$n" ;
+	}
     }
     else {
         print 
@@ -302,7 +307,12 @@ sub _show_form {
     print $n, end_form, $n ; 
 
     if( $formref->{-FOOTER} ) {
-        print $formref->{-FOOTER} ;
+	if ( ref $formref->{-FOOTER} eq 'CODE' ) {
+	    &{$formref->{-FOOTER}} ;
+	}
+	else {
+	    print "$formref->{-FOOTER}$n" ;
+	}
     }
     else {
         print hr, end_html ;
@@ -678,7 +688,19 @@ used it must include everything up to and including final "</html>", e.g.:
 
     show_form(
         -FOOTER => $footer,
-        # etc
+        # etc.
+
+Alternatively, supply a code reference, e.g.:
+
+    sub my_footer {
+	print '<hr>The end' . end_html ;
+    }
+
+    show_form(
+	-FOOTER => \&my_footer,
+	# etc.
+
+Note that the code that's called is responsible for printing its own output.
 
 =item C<-HEADER> 
 
@@ -692,6 +714,19 @@ form proper. If you use this it must include everything from
     show_form(
         -HEADER => $header,
         # etc
+
+Alternatively, supply a code reference, e.g.:
+
+    sub my_header {
+	print header . start_html( 'A new beginning' ) ;
+    }
+
+    show_form(
+	-HEADER => \&my_header,
+	# etc.
+
+Note that the code that's called is responsible for printing its own output.
+See C<example5>.
 
 =item C<-INTRO> 
 
@@ -1377,7 +1412,7 @@ See CHANGES for acknowledgements.
 
 =head1 COPYRIGHT
 
-Copyright (c) Mark Summerfield 1999-2001. All Rights Reserved.
+Copyright (c) Mark Summerfield 1999-2002. All Rights Reserved.
 
 This module may be used/distributed/modified under the LGPL.
 

@@ -293,7 +293,19 @@ used it must include everything up to and including final "</html>", e.g.:
 
     show_form(
         -FOOTER => $footer,
-        # etc
+        # etc.
+
+Alternatively, supply a code reference, e.g.:
+
+    sub my_footer {
+	print '<hr>The end' . end_html ;
+    }
+
+    show_form(
+	-FOOTER => \&my_footer,
+	# etc.
+
+Note that the code that's called is responsible for printing its own output.
 
 =item C<-HEADER> 
 
@@ -307,6 +319,19 @@ form proper. If you use this it must include everything from
     show_form(
         -HEADER => $header,
         # etc
+
+Alternatively, supply a code reference, e.g.:
+
+    sub my_header {
+	print header . start_html( 'A new beginning' ) ;
+    }
+
+    show_form(
+	-HEADER => \&my_header,
+	# etc.
+
+Note that the code that's called is responsible for printing its own output.
+See C<example5>.
 
 =item C<-INTRO> 
 
@@ -992,7 +1017,7 @@ See CHANGES for acknowledgements.
 
 =head1 COPYRIGHT
 
-Copyright (c) Mark Summerfield 1999-2001. All Rights Reserved.
+Copyright (c) Mark Summerfield 1999-2002. All Rights Reserved.
 
 This module may be used/distributed/modified under the LGPL.
 
