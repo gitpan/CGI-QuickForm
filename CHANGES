@@ -1,3 +1,10 @@
+1999/09/22
+
+Added -CLEAN option. This lets you specify a subroutine to be executed on any
+field that has been validated (providing the whole form is valid) to clean it
+up, e.g. make it all upper case or delete spurious whitespace, etc. Thanks to
+Paul Johnston for the suggestion.
+
 1999/09/21
 
 Corrected documentation error. 

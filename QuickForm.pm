@@ -1,6 +1,6 @@
 package CGI::QuickForm ; # Documented at the __END__.
 
-# $Id: QuickForm.pm,v 1.9 1999/09/21 22:20:15 root Exp root $
+# $Id: QuickForm.pm,v 1.11 1999/09/22 18:39:19 root Exp root $
 
 require 5.004 ;
 
@@ -15,7 +15,7 @@ use vars qw(
             %Translate 
             ) ;
 
-$VERSION = '1.21' ; 
+$VERSION = '1.30' ; 
 
 use Exporter() ;
 
@@ -53,24 +53,25 @@ sub show_form {
         my %field = %$fieldref ;
         # We have to write back to the original data, $fieldref only points to
         # a copy.
-        $Record{-FIELDS}[$i]{-LABEL} = $field{-name}  unless $field{-LABEL} ;
-        $Record{-FIELDS}[$i]{-name}  = $field{-LABEL} unless $field{-name} ;
-        $Record{-FIELDS}[$i]{-TYPE}  = 'textfield'    unless $field{-TYPE} ;
-        $Record{-REQUIRED}           = 1              if $field{-REQUIRED} ;
-        if( $Record{-FIELDS}[$i]{-TYPE} eq 'textfield' ) { 
+        my *fieldref = \$Record{-FIELDS}[$i] ;
+        $fieldref->{-LABEL} = $field{-name}  unless $field{-LABEL} ;
+        $fieldref->{-name}  = $field{-LABEL} unless $field{-name} ;
+        $fieldref->{-TYPE}  = 'textfield'    unless $field{-TYPE} ;
+        $Record{-REQUIRED}  = 1              if $field{-REQUIRED} ;
+        if( $fieldref->{-TYPE} eq 'textfield' ) { 
             if( $Record{-SIZE} and not $field{-size} ) {
-                $Record{-FIELDS}[$i]{-size} = $Record{-SIZE} ;
+                $fieldref->{-size}      = $Record{-SIZE} ;
             }
             if( $Record{-MAXLENGTH} and not $field{-maxlength} ) {
-                $Record{-FIELDS}[$i]{-maxlength} = $Record{-MAXLENGTH} ;
+                $fieldref->{-maxlength} = $Record{-MAXLENGTH} ;
             }
         }
-        elsif( $Record{-FIELDS}[$i]{-TYPE} eq 'textarea' ) { 
+        elsif( $fieldref->{-TYPE} eq 'textarea' ) { 
             if( $Record{-ROWS} and not $field{-rows} ) {
-                $Record{-FIELDS}[$i]{-rows} = $Record{-ROWS} ;
+                $fieldref->{-rows}    = $Record{-ROWS} ;
             }
             if( $Record{-COLUMNS} and not $field{-columns} ) {
-                $Record{-FIELDS}[$i]{-columns} = $Record{-COLUMNS} ;
+                $fieldref->{-columns} = $Record{-COLUMNS} ;
             }
         }
         $i++ ;
@@ -113,6 +114,12 @@ sub _check_form {
         &_show_form ;
     }
     else {
+        # Clean any fields that have a clean routine specified.
+        foreach my $fieldref ( @{$Record{-FIELDS}} ) {
+            my %field = %$fieldref ;
+            param( $field{-name}, &{$field{-CLEAN}}( param( $field{-name} ) )
+            if defined $field{-CLEAN} ;
+        }
         &{$Record{-ACCEPT}} ;
     }
 }
@@ -277,6 +284,7 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
                 -REQUIRED  => undef,
                 -TYPE      => 'textfield',
                 -VALIDATE  => undef, # Set this to validate the field
+                -CLEAN     => undef, # Set this to clean up valid data
                 # Lowercase options are those supplied by CGI.pm
                 -name      => undef, # Defaults to -LABEL's value.
                 -default   => undef,
@@ -288,7 +296,8 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
                 -REQUIRED  => undef,
                 -TYPE      => 'textarea',
                 -VALIDATE  => undef,
-                -name      => undef, # Defaults to -LABEL's value.
+                -CLEAN     => undef,
+                -name      => undef,
                 -default   => undef,
                 -rows      => 3,
                 -columns   => 40,
@@ -298,7 +307,8 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
                 -REQUIRED  => undef,
                 -TYPE      => 'password_field',
                 -VALIDATE  => undef,
-                -name      => undef, # Defaults to -LABEL's value.
+                -CLEAN     => undef,
+                -name      => undef,
                 -value     => undef,
                 -size      => 10,
                 -maxlength => undef,
@@ -308,7 +318,8 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
                 -REQUIRED  => undef,
                 -TYPE      => 'scrolling_list',
                 -VALIDATE  => undef,
-                -name      => undef, # Defaults to -LABEL's value.
+                -CLEAN     => undef,
+                -name      => undef,
                 -values    => [ qw( Red Black Brown Grey White ) ],
                 -size      => 1,
                 -multiples => undef,
@@ -318,7 +329,8 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
                 -REQUIRED  => undef,
                 -TYPE      => 'radio_group',
                 -VALIDATE  => undef,
-                -name      => undef, # Defaults to -LABEL's value.
+                -CLEAN     => undef, 
+                -name      => undef,
                 -values    => [ qw( Boxing Cricket Golf ) ], 
                 -default   => 'Golf',
                 -size      => undef,
@@ -452,10 +464,15 @@ example:
         -SIZE      => 50,
         -MAXLENGTH => 70,
         -FIELDS => [
-            { -LABEL => 'Name', },  
+            { 
+                -LABEL => 'Name', 
+                -CLEAN => \&cleanup, # You must supply this (see later).
+            },  
             { -LABEL => 'Age',  }, 
             { 
                 -LABEL => 'Country',  
+                          # Here we upper case the country.
+                -CLEAN => sub { local $_ = shift ; tr/a-z/A-Z/ ; $_ }, 
                 -size  => 20,
             }, 
         ],
@@ -469,6 +486,22 @@ be at least one. The fields are displayed in the order given. The options
 available in each field hash are covered in the next section.
 
 =head2 QuickForm field-level options
+
+C<-CLEAN> Optional subroutine reference. If specified this subroutines will be
+called for the relevant field if and only if the whole record is valid, i.e.
+just before calling your C<on_valid_form> subroutine. It will receive a single
+parameter (the value of the relevant param), and must return a new value. A
+typical routine might clean up excess whitespace, e.g.:
+
+    sub cleanup {
+        local $_ = shift ; # This is the value of param( <fieldname> )
+
+        tr/\s/ /s ; # Convert multiple whitespace to one space.
+        s/^\s*//o ; # Remove leading whitespace.
+        s/\s*$//o ; # Remove trailing whitespace.
+
+        $_ ;
+    }
 
 C<-LABEL> Required string. This is the display label for the field. It is
 also used as the field's name if no C<-name> option is used.
@@ -570,10 +603,12 @@ production-quality program: it has no error checking and is I<not> secure.
             {
                 -LABEL     => 'Forename',
                 -VALIDATE  => \&valid_name,
+                -CLEAN     => \&cleanup,    # (See earlier for definition.)
             },
             {
                 -LABEL     => 'Surname',
                 -VALIDATE  => \&valid_name,
+                -CLEAN     => \&cleanup,    # (See earlier for definition.)
             },
             {
                 -LABEL     => 'Age',

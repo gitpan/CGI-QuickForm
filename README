@@ -57,6 +57,7 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
                 -REQUIRED  => undef,
                 -TYPE      => 'textfield',
                 -VALIDATE  => undef, # Set this to validate the field
+                -CLEAN     => undef, # Set this to clean up valid data
                 # Lowercase options are those supplied by CGI.pm
                 -name      => undef, # Defaults to -LABEL's value.
                 -default   => undef,
@@ -68,7 +69,8 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
                 -REQUIRED  => undef,
                 -TYPE      => 'textarea',
                 -VALIDATE  => undef,
-                -name      => undef, # Defaults to -LABEL's value.
+                -CLEAN     => undef,
+                -name      => undef,
                 -default   => undef,
                 -rows      => 3,
                 -columns   => 40,
@@ -78,7 +80,8 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
                 -REQUIRED  => undef,
                 -TYPE      => 'password_field',
                 -VALIDATE  => undef,
-                -name      => undef, # Defaults to -LABEL's value.
+                -CLEAN     => undef,
+                -name      => undef,
                 -value     => undef,
                 -size      => 10,
                 -maxlength => undef,
@@ -88,7 +91,8 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
                 -REQUIRED  => undef,
                 -TYPE      => 'scrolling_list',
                 -VALIDATE  => undef,
-                -name      => undef, # Defaults to -LABEL's value.
+                -CLEAN     => undef,
+                -name      => undef,
                 -values    => [ qw( Red Black Brown Grey White ) ],
                 -size      => 1,
                 -multiples => undef,
@@ -98,7 +102,8 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
                 -REQUIRED  => undef,
                 -TYPE      => 'radio_group',
                 -VALIDATE  => undef,
-                -name      => undef, # Defaults to -LABEL's value.
+                -CLEAN     => undef, 
+                -name      => undef,
                 -values    => [ qw( Boxing Cricket Golf ) ], 
                 -default   => 'Golf',
                 -size      => undef,
@@ -232,10 +237,15 @@ example:
         -SIZE      => 50,
         -MAXLENGTH => 70,
         -FIELDS => [
-            { -LABEL => 'Name', },  
+            { 
+                -LABEL => 'Name', 
+                -CLEAN => \&cleanup, # You must supply this (see later).
+            },  
             { -LABEL => 'Age',  }, 
             { 
                 -LABEL => 'Country',  
+                          # Here we upper case the country.
+                -CLEAN => sub { local $_ = shift ; tr/a-z/A-Z/ ; $_ }, 
                 -size  => 20,
             }, 
         ],
@@ -249,6 +259,22 @@ be at least one. The fields are displayed in the order given. The options
 available in each field hash are covered in the next section.
 
 =head2 QuickForm field-level options
+
+C<-CLEAN> Optional subroutine reference. If specified this subroutines will be
+called for the relevant field if and only if the whole record is valid, i.e.
+just before calling your C<on_valid_form> subroutine. It will receive a single
+parameter (the value of the relevant param), and must return a new value. A
+typical routine might clean up excess whitespace, e.g.:
+
+    sub cleanup {
+        local $_ = shift ; # This is the value of param( <fieldname> )
+
+        tr/\s/ /s ; # Convert multiple whitespace to one space.
+        s/^\s*//o ; # Remove leading whitespace.
+        s/\s*$//o ; # Remove trailing whitespace.
+
+        $_ ;
+    }
 
 C<-LABEL> Required string. This is the display label for the field. It is
 also used as the field's name if no C<-name> option is used.
@@ -350,10 +376,12 @@ production-quality program: it has no error checking and is I<not> secure.
             {
                 -LABEL     => 'Forename',
                 -VALIDATE  => \&valid_name,
+                -CLEAN     => \&cleanup,    # (See earlier for definition.)
             },
             {
                 -LABEL     => 'Surname',
                 -VALIDATE  => \&valid_name,
+                -CLEAN     => \&cleanup,    # (See earlier for definition.)
             },
             {
                 -LABEL     => 'Age',
