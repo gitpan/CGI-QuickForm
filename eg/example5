@@ -1,6 +1,6 @@
 #!/usr/bin/perl -Tw
 
-# $Id: bicycle,v 1.5 2000/02/08 20:06:17 root Exp $
+# $Id: bicycle,v 1.6 2000/04/06 22:02:55 root Exp root $
 
 # Copyright (c) Mark Summerfield 1999-2000. All Rights Reserved.
 # May be used/distributed under the GPL.
@@ -32,17 +32,21 @@ show_form(
     -FIELDS           => [
             { 
                 -LABEL            => 'Forename', 
+                -REQUIRED         => 1,
                 # Over-ride global settings:
                 -STYLE_FIELDNAME  => 'style="background-color:LIGHTGREEN"', 
                 -STYLE_FIELDVALUE => 'style="background-color:YELLOW"', 
+                -default          => 'Jane',
             },
             { 
                 -LABEL            => 'Surname',  
+                -REQUIRED         => 1,
                 -STYLE_ROW        => 'valign="top" bgcolor="#ff8080"', 
                 # We have to over-ride global settings; have to use a space
                 # since if we use '' then the global setting will be applied.
                 -STYLE_FIELDNAME  => ' ', 
                 -STYLE_FIELDVALUE => ' ', 
+                -default          => 'Doe',
             },
             {
                 # No explicit validation - browser will ensure that one of
@@ -59,7 +63,7 @@ show_form(
                 -LABEL    => 'Speeds',
                 -VALIDATE => \&valid_speeds, # Field validation
                 -DESC     => 'Pick the number of speeds required',
-                -default  => 5,
+                -default  => 15, # Makes it invalid.
             },
         ],
     ) ;

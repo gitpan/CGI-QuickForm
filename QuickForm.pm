@@ -1,6 +1,6 @@
 package CGI::QuickForm ; # Documented at the __END__.
 
-# $Id: QuickForm.pm,v 1.47 2000/03/20 21:19:06 root Exp $
+# $Id: QuickForm.pm,v 1.50 2000/04/06 22:25:57 root Exp root $
 
 require 5.004 ;
 
@@ -15,7 +15,7 @@ use vars qw(
             %Translate 
             ) ;
 
-$VERSION   = '1.76' ; 
+$VERSION   = '1.80' ; 
 
 use Exporter() ;
 
@@ -46,6 +46,7 @@ sub show_form {
         -BORDER           => 0,
         -CHECK            => 1,
         -SPACE            => 0,
+        -MULTI_COLUMN     => 0,
         -STYLE_FIELDNAME  => '',
         -STYLE_FIELDVALUE => '',
         -STYLE_BUTTONS    => '',
@@ -84,7 +85,14 @@ sub show_form {
         $form{-FIELDS}[$i]{-LABEL} = $fieldref->{-name}  unless $fieldref->{-LABEL} ;
         $form{-FIELDS}[$i]{-name}  = $fieldref->{-LABEL} unless $fieldref->{-name} ;
         $form{-FIELDS}[$i]{-TYPE}  = 'textfield'         unless $fieldref->{-TYPE} ;
-        $form{-REQUIRED}           = 1                   if $fieldref->{-REQUIRED} ;
+
+        $form{-FIELDS}[$i]{-START_ROW} = 1 
+        if $i == 0 or $form{-FIELDS}[$i - 1]{-END_ROW} or not $form{-MULTI_COLUMN} ;
+
+        $form{-FIELDS}[$i]{-END_ROW}   = 1 
+        if $i == $#{$form{-FIELDS}} or not $form{-MULTI_COLUMN} ;
+
+        $form{-REQUIRED}               = 1 if $fieldref->{-REQUIRED} ;
         if( $form{-FIELDS}[$i]{-TYPE} eq 'textfield' ) { 
             if( $form{-SIZE} and not $fieldref->{-size} ) {
                 $form{-FIELDS}[$i]{-size}      = $form{-SIZE} ;
@@ -190,7 +198,8 @@ sub _show_form {
 
     if( defined( $ENV{'GATEWAY_INTERFACE'} ) and 
         ( $ENV{'GATEWAY_INTERFACE'} =~ /^CGI-Perl/ ) ) {
-        print start_form( -action => script_name() . path_info() ) ;
+        print start_form( 
+                -action => ( script_name() || '' ) . ( path_info() || '' ) ) ;
     }
     else {
         print start_form ; 
@@ -214,7 +223,9 @@ sub _show_form {
         my $namestyle  = delete $field{-STYLE_FIELDNAME} ;
         my $valuestyle = delete $field{-STYLE_FIELDVALUE} ;
         my $descstyle  = delete $field{-STYLE_DESC} ;
-        print qq{<tr$rowstyle>$n<td$namestyle>$field{-LABEL}$required$invalid} .
+        my $endrow     = delete $field{-END_ROW} ;
+        print qq{<tr$rowstyle>$n} if delete $field{-START_ROW} ;
+        print qq{<td$namestyle>$field{-LABEL}$required$invalid} .
               qq{</td>$n<td$valuestyle>} ;
         print "<span$descstyle>$field{-DESC}</span><br />" if $field{-DESC} ;
         delete @field{-LABEL,-VALIDATE,-CLEAN,-SIZE,-MAXLENGTH,-ROWS,-COLUMNS} ;
@@ -224,7 +235,8 @@ sub _show_form {
         # Prefer to say why immediately after the field rather than in a
         # separate column.
         print " $why" if $invalid and defined $why ;
-        print "</td>$n</tr>$n" ;
+        print "</td>$n" ;
+        print "</tr>$n" if $endrow ;
     }
 
     print "</table>$n", ( ( $formref->{-STYLE_BUTTONS} eq 'center' ) ? 
@@ -379,6 +391,7 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
         -COLUMNS          => undef,
         -CHECK            => 1,
         -SPACE            => 0, # Output some newlines to assist debugging if 1
+        -MULTI_COLUMN     => 0,
         -STYLE_FIELDNAME  => '',
         -STYLE_FIELDVALUE => '',
         -STYLE_BUTTONS    => '',
@@ -388,6 +401,8 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
         -FIELDS           => [            
             { 
                 -LABEL            => 'Name', 
+                -START_ROW        => 1,
+                -END_ROW          => 1,
                 -REQUIRED         => undef,
                 -TYPE             => 'textfield',
                 -VALIDATE         => undef, # Set this to validate the field
@@ -602,6 +617,14 @@ messages to the user, e.g.:
     Fields marked with + are required.
     Fields marked with * contain errors or are empty.
 
+C<-MULTI_COLUMN> Optional boolean (default false). If false QuickForm behaves
+as it always has producing a two column table, the first column with field
+names and the second column with field values. If true QuickForm will put all
+field names and field values in the same row, except where you force a new row
+to be used by marking some fields with C<-END_ROW => 1,>. See the field-level
+options C<-START_ROW> and C<-END_ROW>.
+See example2 and example4 which have been updated to demonstrate these options.
+
 C<-TITLE> Required string (unless you use C<-HEADER>). This is used as the
 form's title and as a header on the form's page - unless you use the
 C<-HEADER> option (see above) in which case this option is ignored.
@@ -738,6 +761,19 @@ C<-REQUIRED> Optional boolean. Default is false. If set to true the field
 must contain something. Should only be used with text fields. It is ignored if
 C<-VALIDATE> is given since C<-VALIDATE> overrides (see later).
 
+C<-START_ROW> and C<-END_ROW> Optional booleans, default is true. These
+options are only relevant if the form-level C<-MULTI_COLUMN> option is set to
+true in which case these options are used to identify at which fields rows
+start and end. In practice C<-START_ROW> should never be needed; simply set
+C<-END_ROW => 1,> in each field which is to be the last field in a given row.
+Note that because some fields may need to span several columns e.g. a layout
+where say the first two fields are side-by-side and the following field is so
+wide it must take the whole width; the wider field's C<-STYLE_FIELDVALUE>
+setting may need to be set to C<qq{colspan="3"}> or similar. Note further that
+if you have set a record-level C<-STYLE_FIELDVALUE> that will need to be
+incorporated along with the C<colspan> setting.
+See example2 and example4 which have been updated to demonstrate these options.
+
 C<-STYLE_*> Some of these options may be applied on a per-field basis; they
 are documented under Styles later.
 
@@ -790,6 +826,9 @@ in the SYNOPSIS above for examples of the most common field types.
 If you wish to use a cascading style sheet with QuickForm then you need to set
 the -HEADER option to include a <link> tag which includes a reference to your
 stylesheet.
+
+If you wish to use multiple columns see C<-MULTI_COLUMN>, C<-START_ROW> and
+C<-END_ROW> as well as example2 and example4.
 
 Whether you use a stylesheet for classes or in-line styles you can set the
 class or style using the -STYLE_* options, e.g.
@@ -1029,8 +1068,6 @@ you run them under Apache::Registry.
 See http://www.perlpress.com/perl/quickform.html
 
 =head1 BUGS
-
-Please don't use version 1.56, later or earlier versions are fine.
 
 If you get messages like this under pure mod_perl:
     [error] Undefined subroutine &Apache::xxxxxxx::handler called.

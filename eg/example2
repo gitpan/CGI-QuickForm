@@ -1,6 +1,6 @@
 #!/usr/bin/perl -Tw
 
-# $Id: quickform,v 1.9 1999/11/07 14:12:58 root Exp root $
+# $Id: quickform,v 1.10 2000/04/06 22:02:55 root Exp root $
 
 # Copyright (c) Mark Summerfield 1999-2000. All Rights Reserved.
 # May be used/distributed under the GPL.
@@ -13,71 +13,56 @@ use strict ;
 use CGI qw( :standard :html3 ) ;
 use CGI::QuickForm qw( show_form colour ) ;
 
+my $STYLE_FIELDVALUE = 'style="background-color:#DDDDDD"' ;
 
 show_form(
-    -SPACE     => 0,
-    -CHECK     => ( query_string() =~ /QFCHK=0/o ? 0 : 1 ), 
-    -FOOTER    => qq{<a href="} . 
-                 url() . 
-                 qq{?QFCHK=0\&Age=28\&Surname=Bloggs\&Forename=Freda">} .
-                 qq{Defaults</a>} . 
-                 end_html,
-#    -LANGUAGE  => 'de',
-    -BUTTONS   => [ { -name => 'Add' }, { -name => 'Del' } ],
-#    -STYLE_BUTTONS => qq{style="font-family:Times;text-align:center;"},
-    -STYLE_BUTTONS => 'center',
-    -TITLE     => 'Test Form',
-    -ACCEPT    => \&on_valid_form, 
-    -SIZE      => 40,
-    -STYLE_WHY => 'style="font-style:italic;color:red"', 
+    -MULTI_COLUMN     => 1, # MULTI_COLUMN
+    -TITLE            => 'Test Form',
+    -ACCEPT           => \&on_valid_form, 
+    -SIZE             => 25,
+    -SPACE            => 1,
+    -CHECK            => ( query_string() =~ /QFCHK=0/o ? 0 : 1 ), 
+    -FOOTER           => qq{<a href="} . 
+                         url() . #"
+                         qq{?QFCHK=0\&Age=28\&Surname=Bloggs\&Forename=Freda">} . #"
+                         qq{Defaults</a>} . 
+                         end_html,
+    -BUTTONS          => [ { -name => 'Add' }, { -name => 'Del' } ],
+    -STYLE_BUTTONS    => 'center',
+    -STYLE_FIELDNAME  => 'style="background-color:#AAAAAA"',
+    -STYLE_FIELDVALUE => $STYLE_FIELDVALUE,
+    -STYLE_WHY        => 'style="font-style:italic;color:red"',
+    -STYLE_DESC       => 'style="color:darkblue"',
     -VALIDATE  => sub { ( int rand(2), "<P>" . colour( 'RED', 'Randomly Invalid' ) ) },
-    -FIELDS    => [
+    -FIELDS           => [
         {
-            -LABEL    => 'Forename',
-            -CLEAN    => \&cleanup, 
-            -VALIDATE => sub { 
+            -LABEL      => 'Forename',
+            -CLEAN      => \&cleanup, 
+            -VALIDATE   => sub { 
                             my $valid = length shift > 3 ; 
                             ( $valid, 'Name too short' ) ;
                         }
         },
         {
-            -LABEL    => 'Surname',
-            -CLEAN    => \&cleanup, 
-            -REQUIRED => 1,
-            -VALIDATE => sub { 
-                            my $valid = length shift > 3 ; 
-                            ( $valid, 'Name too short' ) ;
-                        }
+            -LABEL      => 'Surname',
+            -END_ROW    => 1, # MULTI_COLUMN
+            -CLEAN      => \&cleanup, 
+            -REQUIRED   => 1,
+            -VALIDATE   => sub { 
+                                my $valid = length shift > 3 ; 
+                                ( $valid, 'Name too short' ) ;
+                            }
         },
         {
-            -LABEL    => 'Age',
-            -VALIDATE => &mk_valid_number( 3, 130 ), 
-            -size     => 10,
-        },
-        { 
-            -LABEL     => 'Address', 
-            -REQUIRED  => undef,
-            -TYPE      => 'textarea',
-            -VALIDATE  => undef,
-            -name      => undef, # Defaults to -LABEL's value.
-            -default   => undef,
-            -rows      => 3,
-            -columns   => 40,
+            -LABEL      => 'Sex',
+            -TYPE       => 'radio_group',
+            '-values'   => [ qw( Female Male ) ],
         },
         {
-            -LABEL => 'Sex',
-            -TYPE  => 'radio_group',
-            '-values' => [ qw( Female Male ) ],
-        },
-        { 
-            -LABEL     => 'Password', 
-            -REQUIRED  => undef,
-            -TYPE      => 'password_field',
-            -VALIDATE  => undef,
-            -name      => undef, # Defaults to -LABEL's value.
-            -value     => undef,
-            -size      => 10,
-            -maxlength => undef,
+            -LABEL      => 'Age',
+            -END_ROW    => 1, # MULTI_COLUMN
+            -VALIDATE   => &mk_valid_number( 3, 130 ), 
+            -size       => 10,
         },
         { 
             -LABEL     => 'Hair colour', 
@@ -90,9 +75,33 @@ show_form(
             -multiples => undef,
         },
         { 
+            -LABEL     => 'Password', 
+            -END_ROW   => 1, # MULTI_COLUMN
+            -REQUIRED  => undef,
+            -TYPE      => 'password_field',
+            -VALIDATE  => undef,
+            -name      => undef, # Defaults to -LABEL's value.
+            -value     => undef,
+            -size      => 10,
+            -maxlength => undef,
+        },
+        { 
+            -LABEL     => 'Address', 
+            -END_ROW   => 1,
+            -STYLE_FIELDVALUE => qq{$STYLE_FIELDVALUE colspan="3"}, # MULTI_COLUMN
+            -REQUIRED  => undef,
+            -TYPE      => 'textarea',
+            -VALIDATE  => undef,
+            -name      => undef, # Defaults to -LABEL's value.
+            -default   => undef,
+            -rows      => 3,
+            -columns   => 40,
+        },
+        { 
             -LABEL     => 'Worst Sport', 
             -REQUIRED  => undef,
             -TYPE      => 'radio_group',
+            -STYLE_FIELDVALUE => qq{$STYLE_FIELDVALUE colspan="3"}, # MULTI_COLUMN
             -VALIDATE  => undef,
             -name      => undef, # Defaults to -LABEL's value.
             '-values'  => [ qw( Boxing Cricket Golf ) ], 

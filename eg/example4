@@ -87,6 +87,7 @@ my @FIELD    = (
                 -DB_VALIGN => undef,   # BOTTOM, CENTER, TOP 
                 -DB_PREFIX => undef,   # e.g. &#163; or $ etc.
                 -LABEL     => 'ID',
+                -END_ROW   => 1,
                 -REQUIRED  => 1,
                 -maxlen    => 12,
             },
@@ -102,6 +103,7 @@ my @FIELD    = (
                 -DB_NAME   => 'SURNAME',
                 -DB_HTML   => 'b',
                 -LABEL     => 'Surname',
+                -END_ROW   => 1,
                 -REQUIRED  => 1,
                 -size      => 25,
                 -maxlen    => 50,
@@ -117,6 +119,7 @@ my @FIELD    = (
                 -DB_NAME   => 'WORKTEL',
                 -DB_HTML   => undef,
                 -LABEL     => 'Work Tel.',
+                -END_ROW   => 1,
                 -VALIDATE  => \&valid_phone,
                 -default   => '01225 ',
             },
@@ -131,6 +134,7 @@ my @FIELD    = (
                 -DB_NAME   => 'FAX',
                 -DB_HTML   => undef,
                 -LABEL     => 'Fax',
+                -END_ROW   => 1,
                 -VALIDATE  => \&valid_phone,
                 -default   => '01225 ',
             },
@@ -155,6 +159,7 @@ my @FIELD    = (
                 -DB_HTML   => 'url',
                 -DB_ALIGN  => 'CENTER',
                 -LABEL     => 'Home page',
+                -END_ROW   => 1,
                 -VALIDATE  =>
                     sub { 
                         local $_ = shift ; 
@@ -169,6 +174,8 @@ my @FIELD    = (
                 -DB_NAME   => 'ADDRESS',
                 -DB_HTML   => undef,
                 -LABEL     => 'Address',
+                -END_ROW   => 1,
+                -STYLE_FIELDVALUE => qq{colspan="3"},
                 -TYPE      => 'textarea',
                 -rows      => 3,
                 -columns   => 50,
@@ -185,11 +192,13 @@ my @FIELD    = (
                 -DB_HTML   => undef,
                 -DB_ALIGN  => 'RIGHT',
                 -LABEL     => 'Birthday',
+                -END_ROW   => 1,
             },
             {
                 -DB_NAME   => 'NOTES',
                 -DB_HTML   => undef,
                 -LABEL     => 'Notes',
+                -STYLE_FIELDVALUE => qq{colspan="3"},
                 -TYPE      => 'textarea',
                 -rows      => 3,
                 -columns   => 50,
@@ -340,23 +349,24 @@ sub add_or_edit_record {
     my $title = $Action eq $UPDATE ? $EDIT : $Action ;
 
     show_form(
-        -HEADER    => header . 
-                      start_html( 
-                          '-title' => $TITLE, 
-                          -BGCOLOR => $COLOUR{-FORM_BG},
-                          ) . 
-                      h3( "$TITLE - $title" ) . $result,
-        -FOOTER    => p( $add .  $delete .
-                         qq{<a href="$URL?$ACTION=$FIND">$FIND</a> } . 
-                         qq{<a href="$URL?$ACTION=$LIST">$LIST</a>} ) .
-                      hr . end_html,
-        -FIELDS    => \@field,
-        -BUTTONS   => [ { -name => $button } ], 
-        -STYLE_WHY => 'style="font-style:italic;color:red"',
-        -ACCEPT    => \&on_valid_form,
-        -CHECK     => $check,
-        -SIZE      => 20,
-        -MAXLEN    => 20,
+        -HEADER       => header . 
+                         start_html( 
+                         '-title' => $TITLE, 
+                         -BGCOLOR => $COLOUR{-FORM_BG},
+                         ) . 
+                         h3( "$TITLE - $title" ) . $result,
+        -FOOTER       => p( $add .  $delete .
+                            qq{<a href="$URL?$ACTION=$FIND">$FIND</a> } . 
+                            qq{<a href="$URL?$ACTION=$LIST">$LIST</a>} ) .
+                         hr . end_html,
+        -MULTI_COLUMN => 1,
+        -FIELDS       => \@field,
+        -BUTTONS      => [ { -name => $button } ], 
+        -STYLE_WHY    => 'style="font-style:italic;color:red"',
+        -ACCEPT       => \&on_valid_form,
+        -CHECK        => $check,
+        -SIZE         => 20,
+        -MAXLEN       => 20,
         ) ;
 }
 
