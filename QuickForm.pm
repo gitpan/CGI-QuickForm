@@ -15,7 +15,7 @@ use vars qw(
             %Translate 
             ) ;
 
-$VERSION   = '1.56' ; 
+$VERSION   = '1.57' ; 
 
 use Exporter() ;
 
@@ -60,6 +60,13 @@ sub show_form {
     $Record{-BUTTONS}[0]{-name} = $Record{-BUTTONLABEL} if $Record{-BUTTONLABEL} ;
 
     $Record{-REQUIRED} = 0 ; # Assume no fields are required.
+
+    $Record{-STYLE_FIELDNAME}  = " $Record{-STYLE_FIELDNAME}" 
+    if $Record{-STYLE_FIELDNAME} ;
+    $Record{-STYLE_FIELDVALUE} = " $Record{-STYLE_FIELDVALUE}"
+    if $Record{-STYLE_FIELDVALUE} ;
+    $Record{-STYLE_BUTTONS}    = " $Record{-STYLE_BUTTONS}"
+    if $Record{-STYLE_BUTTONS} ;
 
     my $i = 0 ;
     foreach my $fieldref ( @{$Record{-FIELDS}} ) {
@@ -177,8 +184,8 @@ sub _show_form {
         my $invalid  = delete $field{-INVALID} ;
         $invalid     = $invalid ? $INVALID : '' ;
         my $why      = delete $field{-WHY} ;
-        print qq{<TR><TD $Record{-STYLE_FIELDNAME}>$field{-LABEL}$required$invalid} .
-              qq{<TD $Record{-STYLE_FIELDVALUE}>} ;
+        print qq{<TR><TD$Record{-STYLE_FIELDNAME}>$field{-LABEL}$required$invalid} .
+              qq{</TD><TD$Record{-STYLE_FIELDVALUE}>} ;
         delete @field{-LABEL,-VALIDATE,-CLEAN,-SIZE,-MAXLENGTH,-ROWS,-COLUMNS} ;
         no strict "refs" ;
         local $^W = 0 ; # Switch off moans about undefined values.
@@ -186,10 +193,10 @@ sub _show_form {
         # Prefer to say why immediately after the field rather than in a
         # separate column.
         print " $why" if $invalid and defined $why ;
-        print "</TR>" ;
+        print "</TD></TR>" ;
     }
 
-    print "</TABLE><SPAN $Record{-STYLE_BUTTONS}>" ;
+    print "</TABLE><SPAN$Record{-STYLE_BUTTONS}>" ;
 
     foreach my $fieldref ( @{$Record{-BUTTONS}} ) {
         if( $fieldref->{-DEFAULTS} ) {
@@ -877,6 +884,7 @@ production-quality program: it has no error checking and is I<not> secure.
 =head1 BUGS
 
 None that have come to light (yet).
+Please don't use version 1.56, later or earlier versions are fine.
 
 =head1 AUTHOR
 

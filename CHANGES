@@ -1,3 +1,9 @@
+1999/11/30
+
+Please don't use version 1.56 - introduced some bugs in that one.
+This has the corrections (1.54 and earlier are fine, 1.57 is fine).
+
+
 1999/11/24
 
 Added new -LANGUAGE option, 'cy' welsh. Thanks to Catherine Dixon and Ed

@@ -593,6 +593,7 @@ production-quality program: it has no error checking and is I<not> secure.
 =head1 BUGS
 
 None that have come to light (yet).
+Please don't use version 1.56, later or earlier versions are fine.
 
 =head1 AUTHOR
 
