@@ -1,3 +1,10 @@
+2000/11/20
+
+Tom Shield <shield@aem.umn.edu> noticed that file fields didn't always work
+correctly and supplied a patch which uses multi-part forms if any of the
+fields is a file field; I incorporated a modified version of the patch.
+
+
 2000/05/24
 
 Added new options -NAME, -ONSUBMIT and -JSCRIPT for Javascript users, plus

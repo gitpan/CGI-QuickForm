@@ -1,6 +1,6 @@
 package CGI::QuickForm ; # Documented at the __END__.
 
-# $Id: QuickForm.pm,v 1.62 2000/05/25 20:29:04 root Exp $
+# $Id: QuickForm.pm,v 1.68 2000/11/22 18:53:10 mark Exp mark $
 
 require 5.004 ;
 
@@ -14,7 +14,7 @@ use vars qw(
             %Translate 
             ) ;
 
-$VERSION = '1.88' ; 
+$VERSION = '1.90' ; 
 
 use Exporter() ;
 
@@ -88,6 +88,7 @@ sub show_form {
     if $form{"-STYLE_BUTTONS"} =~ /^ CENT(?:ER|RE)$/oi ;
 
     $form{-TABLE_OPTIONS} = " $form{-TABLE_OPTIONS}" if $form{-TABLE_OPTIONS} ;
+    $form{-MULTIPART} = 0; # Assume single part forms
 
     my $i = 0 ;
     foreach my $fieldref ( @{$form{-FIELDS}} ) {
@@ -99,11 +100,12 @@ sub show_form {
         }
         $form{-FIELDS}[$i]{-STYLE_FIELDVALUE} .= 
             qq{ colspan="$form{-FIELDS}[$i]{-COLSPAN}"} 
-            if $form{-FIELDS}[$i]{-COLSPAN} and $form{-MULTI_COLUMN} ; 
+            if $form{-FIELDS}[$i]{-COLSPAN} and $form{-MULTI_COLUMN} ; #"
 
         $form{-FIELDS}[$i]{-LABEL} = $fieldref->{-name}  unless $fieldref->{-LABEL} ;
         $form{-FIELDS}[$i]{-name}  = $fieldref->{-LABEL} unless $fieldref->{-name} ;
         $form{-FIELDS}[$i]{-TYPE}  = 'textfield'         unless $fieldref->{-TYPE} ;
+        $form{-MULTIPART} = 1 if $form{-FIELDS}[$i]{-TYPE} eq 'filefield' ;
 
         $form{-FIELDS}[$i]{-START_ROW} = 1 
         if $i == 0 or $form{-FIELDS}[$i - 1]{-END_ROW} or not $form{-MULTI_COLUMN} ;
@@ -216,22 +218,24 @@ sub _show_form {
     print " $Translate{$formref->{-LANGUAGE}}{-INVALID}$n"
     if $invalid and not defined $why ;
 
+    my $start_form = $formref->{-MULTIPART} ? 
+                        \&CGI::start_multipart_form : \&CGI::start_form ;
     if( defined( $ENV{'GATEWAY_INTERFACE'} ) and 
         ( $ENV{'GATEWAY_INTERFACE'} =~ /^CGI-Perl/ ) ) {
-        print start_form( 
-		        -name     => $formref->{-NAME},
-		        -onSubmit => $formref->{-ONSUBMIT},
-                -action   => ( script_name() || '' ) . ( path_info() || '' ) 
-                ), $n ;
+        print &$start_form( 
+            -name     => $formref->{-NAME},
+            -onSubmit => $formref->{-ONSUBMIT},
+            -action   => ( script_name() || '' ) . ( path_info() || '' ) 
+             ), $n ;
     }
     else {
-        print start_form(
-                -name     => $formref->{-NAME},
-			    -onSubmit => $formref->{-ONSUBMIT} 
-                ), $n ;
+        print &$start_form(
+            -name     => $formref->{-NAME},
+            -onSubmit => $formref->{-ONSUBMIT} 
+            ), $n ;
     }
 
-    print qq{$n<table border="$formref->{-BORDER}"$formref->{-TABLE_OPTIONS}>$n} ;
+    print qq{$n<table border="$formref->{-BORDER}"$formref->{-TABLE_OPTIONS}>$n} ; #"
 
     my @hidden ;
 
@@ -252,7 +256,7 @@ sub _show_form {
         my $endrow     = delete $field{-END_ROW} ;
         if( $field{-HEADLINE} ) {
             $field{-COLSPAN} ||= 2 ;
-            $namestyle .= qq{ colspan="$field{-COLSPAN}"} ;
+            $namestyle .= qq{ colspan="$field{-COLSPAN}"} ; #"
         }
         print qq{<tr$rowstyle>$n} if delete $field{-START_ROW} ;
         print qq{<td$namestyle>$field{-LABEL}$required$invalid</td>$n} ;
@@ -1266,7 +1270,6 @@ Apache::Registry they you need to do the following:
 
 Add the following lines at the beginning of your script:
 
-    require 'CGI/Apache.pm' ;
     use Apache::Constants qw( :common ) ;
 
 =item 2. 
@@ -1317,14 +1320,6 @@ to call its C<on_valid_form> method.
 =head2 INTRODUCTORY ARTICLE
 
 See http://www.perlpress.com/perl/quickform.html
-
-=head2 YOUR QUICKFORM URLs
-
-If you use QuickForm please let me know the URL and a short one line
-description so I can add it to the list at
-http://www.perlpress.com/perl/quickform-users.html
-
-Thanks!
 
 =head1 BUGS
 

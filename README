@@ -892,7 +892,6 @@ Apache::Registry they you need to do the following:
 
 Add the following lines at the beginning of your script:
 
-    require 'CGI/Apache.pm' ;
     use Apache::Constants qw( :common ) ;
 
 =item 2. 
@@ -943,14 +942,6 @@ to call its C<on_valid_form> method.
 =head2 INTRODUCTORY ARTICLE
 
 See http://www.perlpress.com/perl/quickform.html
-
-=head2 YOUR QUICKFORM URLs
-
-If you use QuickForm please let me know the URL and a short one line
-description so I can add it to the list at
-http://www.perlpress.com/perl/quickform-users.html
-
-Thanks!
 
 =head1 BUGS
 
