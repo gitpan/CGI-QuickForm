@@ -1,3 +1,266 @@
+package CGI::QuickForm ; # Documented at the __END__.
+
+# $Id: QuickForm.pm,v 1.18 1999/10/19 18:22:41 root Exp root $
+
+require 5.004 ;
+
+use strict ;
+
+use CGI qw( :standard :html3 ) ;
+#use CGI::Carp qw( fatalsToBrowser ) ;
+
+use vars qw( 
+            $VERSION @ISA @EXPORT @EXPORT_OK
+            $REQUIRED $INVALID
+            %Translate 
+            ) ;
+
+$VERSION   = '1.53' ; 
+
+use Exporter() ;
+
+@ISA       = qw( Exporter ) ;
+
+@EXPORT    = qw( show_form ) ;
+
+
+# &colour is not documented because at some point it may be moved elsewhere.
+@EXPORT_OK = qw( colour color ) ;
+*color = \&colour ;
+sub colour { qq{<FONT COLOR="$_[0]">$_[1]</FONT>} }
+
+
+my %Record ;
+
+
+sub show_form {
+    %Record = (
+        -LANGUAGE    => 'en',         # Language to use for default messages
+        -TITLE       => 'Quick Form', # Default page title and heading
+        -HEADER      => undef,      
+        -FOOTER      => undef,
+        -ACCEPT      => \&_on_valid_form,
+        -VALIDATE    => undef,        # Call this to validate entire record
+        -SIZE        => undef,
+        -MAXLENGTH   => undef,
+        -ROWS        => undef,
+        -COLUMNS     => undef,
+        -CHECK       => 1,
+        -FIELDS      => [ { -LABEL => 'No Fields Specified' } ],
+        -BUTTONS     => [ { -name  => 'Submit' } ], # Default button
+        @_,
+        ) ;
+
+    # Backward compatibility.
+    $Record{-LANGUAGE} = 'en' if $Record{-LANGUAGE} eq 'english' ;
+    $Record{-BUTTONS}[0]{-name} = $Record{-BUTTONLABEL} if $Record{-BUTTONLABEL} ;
+
+    $Record{-REQUIRED} = 0 ; # Assume no fields are required.
+
+    my $i = 0 ;
+    foreach my $fieldref ( @{$Record{-FIELDS}} ) {
+        my %field = %$fieldref ;
+        # We have to write back to the original data, $fieldref only points to
+        # a copy.
+        $Record{-FIELDS}[$i]{-LABEL} = $field{-name}  unless $field{-LABEL} ;
+        $Record{-FIELDS}[$i]{-name}  = $field{-LABEL} unless $field{-name} ;
+        $Record{-FIELDS}[$i]{-TYPE}  = 'textfield'    unless $field{-TYPE} ;
+        $Record{-REQUIRED}           = 1              if $field{-REQUIRED} ;
+        if( $Record{-FIELDS}[$i]{-TYPE} eq 'textfield' ) { 
+            if( $Record{-SIZE} and not $field{-size} ) {
+                $Record{-FIELDS}[$i]{-size}      = $Record{-SIZE} ;
+            }
+            if( $Record{-MAXLENGTH} and not $field{-maxlength} ) {
+                $Record{-FIELDS}[$i]{-maxlength} = $Record{-MAXLENGTH} ;
+            }
+        }
+        elsif( $Record{-FIELDS}[$i]{-TYPE} eq 'textarea' ) { 
+            if( $Record{-ROWS} and not $field{-rows} ) {
+                $Record{-FIELDS}[$i]{-rows}      = $Record{-ROWS} ;
+            }
+            if( $Record{-COLUMNS} and not $field{-columns} ) {
+                $Record{-FIELDS}[$i]{-columns}   = $Record{-COLUMNS} ;
+            }
+        }
+        $i++ ;
+    }
+
+    if( $Record{-CHECK} and param() ) {
+        &_check_form ;
+    }
+    else {
+        &_show_form ;
+    }
+}
+
+
+sub _check_form {
+
+    $Record{-INVALID} = 0 ;
+    my %Field ;
+
+    my $i = 0 ;
+    foreach my $fieldref ( @{$Record{-FIELDS}} ) {
+        my %field = %$fieldref ;
+        # We have to write back to the original data, $fieldref only points to
+        # a copy.
+        my( $valid, $why ) = defined $field{-VALIDATE} ?
+                                  &{$field{-VALIDATE}}( param( $field{-name} ) ) :
+                                  ( 1, '' ) ;
+        $Record{-FIELDS}[$i]{-INVALID} = 1, 
+        $Record{-FIELDS}[$i]{-WHY}     = $valid ? undef : $why, 
+        $Record{-INVALID}++
+        if ( $field{-REQUIRED} and not param( $field{-name} ) ) or not $valid ;
+        $Field{$field{-name}} = param( $field{-name} ) ;
+        $i++ ;
+    }
+
+    if( not $Record{-INVALID} and defined $Record{-VALIDATE} ) {
+        # If all the individual parts are valid, check that the record as a
+        # whole is valid. The parameters are presented in a name=>value hash.
+        my( $valid, $why ) = &{$Record{-VALIDATE}}( %Field ) ;
+        $Record{-INVALID}  = not $valid ;
+        $Record{-WHY}      = $why ;
+    }
+
+    if( $Record{-INVALID} ) {
+        &_show_form ;
+    }
+    else {
+        # Clean any fields that have a clean routine specified.
+        foreach my $fieldref ( @{$Record{-FIELDS}} ) {
+            my %field = %$fieldref ;
+            param( $field{-name}, &{$field{-CLEAN}}( param( $field{-name} ) ) )
+            if defined $field{-CLEAN} ;
+        }
+        &{$Record{-ACCEPT}} ;
+    }
+}
+
+
+sub _show_form {
+
+    my $invalid = delete $Record{-INVALID} ;
+    my $why     = delete $Record{-WHY} ;
+
+    if( $Record{-HEADER} ) {
+        print $Record{-HEADER} ;
+    }
+    else {
+        print 
+            header,
+            start_html( $Record{-TITLE} ),
+            h3( $Record{-TITLE} ),
+            p( $Translate{$Record{-LANGUAGE}}{-INTRO} ),
+            ;
+    }
+
+    print $Translate{$Record{-LANGUAGE}}{-REQUIRED}   if $Record{-REQUIRED} ;
+    print " $Translate{$Record{-LANGUAGE}}{-INVALID}" if $invalid ;
+    print "<BR>$why" if $invalid and defined $why ;
+
+    print start_form, qq{<TABLE BORDER="0">} ;
+
+    my @hidden ;
+
+    foreach my $fieldref ( @{$Record{-FIELDS}} ) {
+        my %field    = %$fieldref ;
+        my $type     = delete $field{-TYPE} ;
+        push @hidden, $fieldref   if $type eq 'hidden' ;
+        next if $type eq 'submit' or $type eq 'hidden' ;
+        my $required = delete $field{-REQUIRED} ;
+        $required    = $required ? $REQUIRED : '' ;
+        my $invalid  = delete $field{-INVALID} ;
+        $invalid     = $invalid ? $INVALID : '' ;
+        my $why      = delete $field{-WHY} ;
+        print "<TR><TD>$field{-LABEL}$required$invalid</TD><TD>" ;
+        delete @field{-LABEL,-VALIDATE,-CLEAN,-SIZE,-MAXLENGTH,-ROWS,-COLUMNS} ;
+        no strict "refs" ;
+        local $^W = 0 ; # Switch off moans about undefined values.
+        print &{$type}( %field ) ; 
+        # Prefer to say why immediately after the field rather than in a
+        # separate column.
+        print " $why" if $invalid and defined $why ;
+        print "</TD></TR>" ;
+    }
+
+    print "</TABLE>" ;
+
+    foreach my $fieldref ( @{$Record{-BUTTONS}} ) {
+        print submit( %$fieldref ), " " ;
+    }
+
+    foreach my $fieldref ( @hidden ) {
+        my %field = %$fieldref ;
+        delete @field{-LABEL,-VALIDATE,-CLEAN,-SIZE,-MAXLENGTH,-ROWS,-COLUMNS,
+                      -TYPE,-REQUIRED,-INVALID,-WHY} ;
+        print hidden( %field ) ;
+    }
+
+    print end_form ; 
+
+    if( $Record{-FOOTER} ) {
+        print $Record{-FOOTER} ;
+    }
+    else {
+        print hr, end_html ;
+    }
+}
+
+
+sub _on_valid_form {
+
+    # This is included for completeness - if you don't supply your own your
+    # form will simply throw away the user's data!
+
+    print
+        header,
+        start_html( $Record{-TITLE} ),
+        h3( $Record{-TITLE} ),
+        p( "You must define your own &amp;on_valid_form subroutine, otherwise " .
+           "the data will simply be thrown away." ),
+        end_html,
+        ;
+}
+
+
+BEGIN {
+
+    $REQUIRED = '<B><FONT COLOR="BLUE">+</FONT></B>' ;
+    $INVALID  = '<B><FONT COLOR="RED">*</FONT></B>' ;
+
+    %Translate = (
+        'de' => {
+            -INTRO    => "Tragen Sie bitte die Informationen ein.",
+            -REQUIRED => "Die Dateneingabe Felder, die mit $REQUIRED " .
+                         "gekennzeichnet werden, werden angefordert.",
+            -INVALID  => "Die Dateneingabe Felder, die mit gekennzeichnet " .
+                         "werden $INVALID enthalten Sie Fehler oder seien " .
+                         "Sie leer.",
+            },
+         'en' => {
+            -INTRO    => "Please enter the information.",
+            -REQUIRED => "Data entry fields marked with $REQUIRED are required.",
+            -INVALID  => "Data entry fields marked with $INVALID contain errors " .
+                         "or are empty.",
+            },
+         'fr' => {
+            -INTRO    => "Veuillez &eacute;crire l'information.",
+            -REQUIRED => "Des zones de saisie de donn&eacute;es " .
+                         "identifi&eacute;es par " .
+                         "$REQUIRED sont exig&eacute;es.",
+            -INVALID  => "Des zones de saisie de données identifi&eacute;es par " .
+                         "$INVALID contenez les erreurs ou soyez vide.",
+            },
+        ) ;
+}
+
+
+1 ;
+
+
+__END__
+
 =head1 NAME
 
 CGI::QuickForm - Perl module to provide quick CGI forms. 

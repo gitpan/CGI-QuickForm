@@ -1,3 +1,11 @@
+1999/10/21
+
+Minor documentation clarification regarding query strings in the -CHECK
+section.
+
+Added a fourth example - this one shows how to use QuickForm with DBI to
+provide simple add/edit/delete/list records. 
+
 1999/10/19
 
 Bug fix: no longer show labels for hidden fields.

@@ -1,6 +1,6 @@
 package CGI::QuickForm ; # Documented at the __END__.
 
-# $Id: QuickForm.pm,v 1.18 1999/10/19 18:22:41 root Exp root $
+# $Id: QuickForm.pm,v 1.19 1999/10/21 21:24:59 root Exp root $
 
 require 5.004 ;
 
@@ -15,7 +15,7 @@ use vars qw(
             %Translate 
             ) ;
 
-$VERSION   = '1.52' ; 
+$VERSION   = '1.53' ; 
 
 use Exporter() ;
 
@@ -483,6 +483,12 @@ I<not> be one of the form's fields! e.g.
         -CHECK => $Check,
         # etc
         ) ;
+
+Note that QuickForm discards any query string if it reinvokes itself because
+of invalid data. This is useful because it means you can use the query string
+to distinguish between a 'first time' call and subsequent calls as we do here
+with -CHECK. However if you want a query string parameter to survive these
+calls we must extract them and pass them ourselves, e.g. via a hidden field.
 
 C<-FOOTER> Optional string. This is used to present any text following the
 form and if used it must include everything up to and including final
