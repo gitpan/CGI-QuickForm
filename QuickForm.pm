@@ -1,6 +1,6 @@
 package QuickForm ; # Documented at the __END__.
 
-# $Id: QuickForm.pm,v 1.2 1999/08/29 19:10:26 root Exp root $
+# $Id: QuickForm.pm,v 1.3 1999/09/01 21:18:08 root Exp root $
 
 require 5.004 ;
 
@@ -15,7 +15,7 @@ use vars qw(
             %String 
             ) ;
 
-$VERSION = '1.00' ; 
+$VERSION = '1.02' ; 
 
 use Exporter() ;
 
@@ -23,11 +23,11 @@ use Exporter() ;
 
 @EXPORT = qw( run ) ;
 
-my %Arg ;
+my %Record ;
 
 
 sub run {
-    %Arg = (
+    %Record = (
         -LANGUAGE    => 'english',    # Language to use for default messages
         -BUTTONLABEL => 'Submit',     # Default submit button text
         -TITLE       => 'Quick Form', # Default page title and heading
@@ -39,14 +39,17 @@ sub run {
         @_,
         ) ;
 
+    $Record{-REQUIRED} = 0 ; # Assume no fields are required.
+
     my $i = 0 ;
-    foreach my $fieldref ( @{$Arg{-FIELDS}} ) {
+    foreach my $fieldref ( @{$Record{-FIELDS}} ) {
         my %field = %$fieldref ;
         # We have to write back to the original data, $fieldref only points to
         # a copy.
-        $Arg{-FIELDS}[$i]{-LABEL} = $field{-name}  unless $field{-LABEL} ;
-        $Arg{-FIELDS}[$i]{-name}  = $field{-LABEL} unless $field{-name} ;
-        $Arg{-FIELDS}[$i]{-TYPE}  = 'textfield'    unless $field{-TYPE} ;
+        $Record{-FIELDS}[$i]{-LABEL} = $field{-name}  unless $field{-LABEL} ;
+        $Record{-FIELDS}[$i]{-name}  = $field{-LABEL} unless $field{-name} ;
+        $Record{-FIELDS}[$i]{-TYPE}  = 'textfield'    unless $field{-TYPE} ;
+        $Record{-REQUIRED}           = 1              if $field{-REQUIRED} ;
         $i++ ;
     }
 
@@ -61,15 +64,15 @@ sub run {
 
 sub _check_form {
 
-    $Arg{-INVALID} = 0 ;
+    $Record{-INVALID} = 0 ;
     my %Field ;
 
     my $i = 0 ;
-    foreach my $fieldref ( @{$Arg{-FIELDS}} ) {
+    foreach my $fieldref ( @{$Record{-FIELDS}} ) {
         my %field = %$fieldref ;
         # We have to write back to the original data, $fieldref only points to
         # a copy.
-        $Arg{-FIELDS}[$i]{-INVALID} = 1, $Arg{-INVALID}++
+        $Record{-FIELDS}[$i]{-INVALID} = 1, $Record{-INVALID}++
         if ( $field{-REQUIRED} and not param( $field{-name} ) ) or
            ( defined $field{-VALIDATE} and not
              &{$field{-VALIDATE}}( param( $field{-name} ) ) ) ;
@@ -77,43 +80,43 @@ sub _check_form {
         $i++ ;
     }
 
-    if( not $Arg{-INVALID} and defined $Arg{-VALIDATE} ) {
+    if( not $Record{-INVALID} and defined $Record{-VALIDATE} ) {
         # If all the individual parts are valid, check that the record as a
         # whole is valid. The parameters are presented in a name=>value hash.
-        $Arg{-INVALID} = not &{$Arg{-VALIDATE}}( %Field ) ;
+        $Record{-INVALID} = not &{$Record{-VALIDATE}}( %Field ) ;
     }
 
-    if( $Arg{-INVALID} ) {
+    if( $Record{-INVALID} ) {
         &_show_form ;
     }
     else {
-        &{$Arg{-ACCEPT}} ;
+        &{$Record{-ACCEPT}} ;
     }
 }
 
 
 sub _show_form {
 
-    my $invalid = delete $Arg{-INVALID} ;
+    my $invalid = delete $Record{-INVALID} ;
 
-    if( $Arg{-HEADER} ) {
-        print $Arg{-HEADER} ;
+    if( $Record{-HEADER} ) {
+        print $Record{-HEADER} ;
     }
     else {
         print 
             header,
-            start_html( $Arg{-TITLE} ),
-            h3( $Arg{-TITLE} ),
-            p( $String{$Arg{-LANGUAGE}}{-INTRO} ),
+            start_html( $Record{-TITLE} ),
+            h3( $Record{-TITLE} ),
+            p( $String{$Record{-LANGUAGE}}{-INTRO} ),
             ;
     }
 
-    print $String{$Arg{-LANGUAGE}}{-REQUIRED} ;
-    print " ", $String{$Arg{-LANGUAGE}}{-INVALID} if $invalid ;
+    print $String{$Record{-LANGUAGE}}{-REQUIRED} if $Record{-REQUIRED} ;
+    print " ", $String{$Record{-LANGUAGE}}{-INVALID} if $invalid ;
 
     print start_form, qq{<TABLE BORDER="0">} ;
 
-    foreach my $fieldref ( @{$Arg{-FIELDS}} ) {
+    foreach my $fieldref ( @{$Record{-FIELDS}} ) {
         my %field    = %$fieldref ;
         my $required = delete $field{-REQUIRED} ;
         $required    = $required ? $REQUIRED : '' ;
@@ -128,10 +131,10 @@ sub _show_form {
         print "</TD></TR>" ;
     }
 
-    print "</TABLE>", submit( $Arg{-BUTTONLABEL} ), end_form ; 
+    print "</TABLE>", submit( $Record{-BUTTONLABEL} ), end_form ; 
 
-    if( $Arg{-FOOTER} ) {
-        print $Arg{-FOOTER} ;
+    if( $Record{-FOOTER} ) {
+        print $Record{-FOOTER} ;
     }
     else {
         print hr, end_html ;
@@ -146,8 +149,8 @@ sub _on_valid_form {
 
     print
         header,
-        start_html( $Arg{-TITLE} ),
-        h3( $Arg{-TITLE} ),
+        start_html( $Record{-TITLE} ),
+        h3( $Record{-TITLE} ),
         p( "You must define your own &amp;on_valid_form subroutine, otherwise " .
            "the data will simply be thrown away." ),
         end_html,
@@ -194,7 +197,7 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
         -TITLE  => 'Test Form',
         -FIELDS => [
             { -LABEL => 'Name', },  # Default field type is textfield.
-            { -LABEL => 'Age', },   # Stored in param( 'Age' ).
+            { -LABEL => 'Age',  },  # Stored in param( 'Age' ).
         ],
     ) ;
 
@@ -225,7 +228,7 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
         -LANGUAGE    => 'english',
         -TITLE       => 'Test Form',
         -VALIDATE    => undef,       # Set this to validate the entire record
-        -FIELDS      => [
+        -FIELDS      => [            # (see examples later)
             { 
                 -LABEL     => 'Name', 
                 -REQUIRED  => undef,
@@ -234,36 +237,47 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
                 # Lowercase options are those supplied by CGI.pm
                 -name      => undef, # Defaults to -LABEL's value.
                 -default   => undef,
-                -size      => undef,
+                -size      => 30,
                 -maxlength => undef,
             },
             { 
-                -LABEL     => 'Name', 
+                -LABEL     => 'Address', 
                 -REQUIRED  => undef,
                 -TYPE      => 'textarea',
                 -VALIDATE  => undef,
                 -name      => undef, # Defaults to -LABEL's value.
                 -default   => undef,
-                -rows      => undef,
-                -columns   => undef,
+                -rows      => 3,
+                -columns   => 40,
             },
             { 
-                -LABEL     => 'Name', 
+                -LABEL     => 'Password', 
                 -REQUIRED  => undef,
                 -TYPE      => 'password_field',
                 -VALIDATE  => undef,
                 -name      => undef, # Defaults to -LABEL's value.
                 -value     => undef,
-                -size      => undef,
+                -size      => 10,
                 -maxlength => undef,
             },
             { 
-                -LABEL     => 'Name', 
+                -LABEL     => 'Hair colour', 
                 -REQUIRED  => undef,
                 -TYPE      => 'scrolling_list',
                 -VALIDATE  => undef,
                 -name      => undef, # Defaults to -LABEL's value.
-                -values    => undef, # e.g. [ 'one', 'two', 'three' ]
+                -values    => [ qw( Red Black Brown Grey White ) ],
+                -size      => 1,
+                -multiples => undef,
+            },
+            { 
+                -LABEL     => 'Worst Sport', 
+                -REQUIRED  => undef,
+                -TYPE      => 'radio_group',
+                -VALIDATE  => undef,
+                -name      => undef, # Defaults to -LABEL's value.
+                -values    => [ qw( Boxing Cricket Golf ) ], 
+                -default   => 'Golf',
                 -size      => undef,
                 -multiples => undef,
             },
@@ -395,7 +409,8 @@ All the other options passed in the hash should be the lowercase options
 supported by C<CGI.pm> for the particular field type. For example for a
 C<-TYPE> of C<textfield> the options currently supported are C<-name>,
 C<-default>, C<-size> and C<-maxlength>; you may use any, all or none of them
-since C<CGI.pm> always provides sensible defaults.
+since C<CGI.pm> always provides sensible defaults. See "All QuickForm options"
+in the SYNOPSIS above for examples of the most common field types.
 
 =head2 EXAMPLE #1: Using a form to generate email 
 
@@ -420,6 +435,11 @@ production-quality program: it has no error checking and is I<not> secure.
                 -REQUIRED => 1,
             },
             { -LABEL => 'Age', },
+            {
+                -LABEL    => 'Sex',
+                -TYPE     => 'radio_group',
+                '-values' => [ qw( Female Male ) ],
+            },
         ],
     ) ;
 
@@ -430,14 +450,11 @@ production-quality program: it has no error checking and is I<not> secure.
         my $surname  = param( 'Surname' ) ;
         my $age      = param( 'Age' ) ;
         open MAIL, "|/usr/lib/sendmail -t" ; 
-        print MAIL <<__EOT__ ;
-    From: test\@localhost
-    To: user\@localhost
-    Subject: Quick Form Email Test
-
-    Name: $forename $surname
-    Age:  $age
-    __EOT__
+        print MAIL "From: test\@localhost\n" .
+                   "To: user\@localhost\n" .
+                   "Subject: Quick Form Email Test\n\n" .
+                   "Name: $forename $surname\n" .
+                   "Age:  $age\n" ;
         print header, start_html( 'Test Form Data Accepted' ),
             h3( 'Test Form Data Accepted' ),
             p( "Thank you $forename for your data." ), end_html ;
@@ -523,7 +540,8 @@ None that have come to light (yet).
 
 1999/08/28  Version 1.00.
 
-1999/09/01  Fixed error in Makefile.PL
+1999/09/01  Corrected Makefile.PL plus minor improvements to the code and
+            documentation.
 
 =head1 AUTHOR
 

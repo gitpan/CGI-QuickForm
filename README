@@ -16,7 +16,7 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
         -TITLE  => 'Test Form',
         -FIELDS => [
             { -LABEL => 'Name', },  # Default field type is textfield.
-            { -LABEL => 'Age', },   # Stored in param( 'Age' ).
+            { -LABEL => 'Age',  },  # Stored in param( 'Age' ).
         ],
     ) ;
 
@@ -47,7 +47,7 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
         -LANGUAGE    => 'english',
         -TITLE       => 'Test Form',
         -VALIDATE    => undef,       # Set this to validate the entire record
-        -FIELDS      => [
+        -FIELDS      => [            # (see examples later)
             { 
                 -LABEL     => 'Name', 
                 -REQUIRED  => undef,
@@ -56,36 +56,47 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
                 # Lowercase options are those supplied by CGI.pm
                 -name      => undef, # Defaults to -LABEL's value.
                 -default   => undef,
-                -size      => undef,
+                -size      => 30,
                 -maxlength => undef,
             },
             { 
-                -LABEL     => 'Name', 
+                -LABEL     => 'Address', 
                 -REQUIRED  => undef,
                 -TYPE      => 'textarea',
                 -VALIDATE  => undef,
                 -name      => undef, # Defaults to -LABEL's value.
                 -default   => undef,
-                -rows      => undef,
-                -columns   => undef,
+                -rows      => 3,
+                -columns   => 40,
             },
             { 
-                -LABEL     => 'Name', 
+                -LABEL     => 'Password', 
                 -REQUIRED  => undef,
                 -TYPE      => 'password_field',
                 -VALIDATE  => undef,
                 -name      => undef, # Defaults to -LABEL's value.
                 -value     => undef,
-                -size      => undef,
+                -size      => 10,
                 -maxlength => undef,
             },
             { 
-                -LABEL     => 'Name', 
+                -LABEL     => 'Hair colour', 
                 -REQUIRED  => undef,
                 -TYPE      => 'scrolling_list',
                 -VALIDATE  => undef,
                 -name      => undef, # Defaults to -LABEL's value.
-                -values    => undef, # e.g. [ 'one', 'two', 'three' ]
+                -values    => [ qw( Red Black Brown Grey White ) ],
+                -size      => 1,
+                -multiples => undef,
+            },
+            { 
+                -LABEL     => 'Worst Sport', 
+                -REQUIRED  => undef,
+                -TYPE      => 'radio_group',
+                -VALIDATE  => undef,
+                -name      => undef, # Defaults to -LABEL's value.
+                -values    => [ qw( Boxing Cricket Golf ) ], 
+                -default   => 'Golf',
                 -size      => undef,
                 -multiples => undef,
             },
@@ -217,7 +228,8 @@ All the other options passed in the hash should be the lowercase options
 supported by C<CGI.pm> for the particular field type. For example for a
 C<-TYPE> of C<textfield> the options currently supported are C<-name>,
 C<-default>, C<-size> and C<-maxlength>; you may use any, all or none of them
-since C<CGI.pm> always provides sensible defaults.
+since C<CGI.pm> always provides sensible defaults. See "All QuickForm options"
+in the SYNOPSIS above for examples of the most common field types.
 
 =head2 EXAMPLE #1: Using a form to generate email 
 
@@ -242,6 +254,11 @@ production-quality program: it has no error checking and is I<not> secure.
                 -REQUIRED => 1,
             },
             { -LABEL => 'Age', },
+            {
+                -LABEL    => 'Sex',
+                -TYPE     => 'radio_group',
+                '-values' => [ qw( Female Male ) ],
+            },
         ],
     ) ;
 
@@ -252,14 +269,11 @@ production-quality program: it has no error checking and is I<not> secure.
         my $surname  = param( 'Surname' ) ;
         my $age      = param( 'Age' ) ;
         open MAIL, "|/usr/lib/sendmail -t" ; 
-        print MAIL <<__EOT__ ;
-    From: test\@localhost
-    To: user\@localhost
-    Subject: Quick Form Email Test
-
-    Name: $forename $surname
-    Age:  $age
-    __EOT__
+        print MAIL "From: test\@localhost\n" .
+                   "To: user\@localhost\n" .
+                   "Subject: Quick Form Email Test\n\n" .
+                   "Name: $forename $surname\n" .
+                   "Age:  $age\n" ;
         print header, start_html( 'Test Form Data Accepted' ),
             h3( 'Test Form Data Accepted' ),
             p( "Thank you $forename for your data." ), end_html ;
@@ -345,7 +359,8 @@ None that have come to light (yet).
 
 1999/08/28  Version 1.00.
 
-1999/09/01  Fixed error in Makefile.PL
+1999/09/01  Corrected Makefile.PL plus minor improvements to the code and
+            documentation.
 
 =head1 AUTHOR
 
