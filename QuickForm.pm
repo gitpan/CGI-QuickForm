@@ -1,6 +1,6 @@
 package CGI::QuickForm ; # Documented at the __END__.
 
-# $Id: QuickForm.pm,v 1.68 2000/11/22 18:53:10 mark Exp mark $
+# $Id: QuickForm.pm,v 1.69 2001/01/05 19:45:32 mark Exp mark $
 
 require 5.004 ;
 
@@ -14,7 +14,7 @@ use vars qw(
             %Translate 
             ) ;
 
-$VERSION = '1.90' ; 
+$VERSION = '1.91' ; 
 
 use Exporter() ;
 
@@ -41,7 +41,7 @@ sub show_form {
         -HEADER           => undef,      
         -FOOTER           => undef,
         -NAME             => '',
-        -JSCRIPT          => '',
+        -JSCRIPT          => {},
         -ONSUBMIT         => '',
         -ACCEPT           => \&_on_valid_form,
         -VALIDATE         => undef,        # Call this to validate entire form
@@ -205,7 +205,9 @@ sub _show_form {
     else {
         print 
             header,
-            start_html( $formref->{-TITLE}, $formref->{-JSCRIPT} ), $n,
+            start_html( 
+		-title  => $formref->{-TITLE}, 
+		-script => $formref->{-JSCRIPT} ), $n,
             h3( $formref->{-TITLE} ), $n,
             p( $formref->{-INTRO} || $Translate{$formref->{-LANGUAGE}}{-INTRO} ), $n,
             ;
@@ -439,7 +441,7 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
         -MULTI_COLUMN     => 0,
         -NAME             => undef,
         -ONSUBMIT         => undef,
-        -JSCRIPT          => '',
+        -JSCRIPT          => {},
         -STYLE_FIELDNAME  => '',
         -STYLE_FIELDVALUE => '',
         -STYLE_BUTTONS    => '',
@@ -711,8 +713,12 @@ See C<example1> and the companion option C<-REQUIRED_HTML>.
 
 =item C<-JSCRIPT>
 
-Optional string. If using Javascript you can include the code in this string
-and it will be put into the html that QuickForm outputs. (See C<-NAME> and
+Optional hash reference; should contain at least one element 'src' which
+should contain some Javascript, e.g. 
+
+    -JSCRIPT => { src => 'document.Address.myfield.focus()' },
+
+This is just a wrapper for CGI.pm's C<-script> option. (See C<-NAME> and
 C<-ONSUBMIT>.)
 
 =item C<-LANGUAGE> 
