@@ -1,6 +1,8 @@
 #!/usr/bin/perl -Tw
 
-# Copyright (c) Mark Summerfield 1999. All Rights Reserved.
+# $Id: bicycle,v 1.4 2000/01/07 19:46:05 root Exp $
+
+# Copyright (c) Mark Summerfield 1999-2000. All Rights Reserved.
 # May be used/distributed under the GPL.
 
 # WARNING - this program is provided as an example of QuickForm use and not as
@@ -8,9 +10,16 @@
 
 use strict ;
 use CGI qw( :standard :html3 ) ;
+use lib '.' ; # This is 'cos my host provider hasn't installed QuickForm!
 use CGI::QuickForm ;
+
+my $title = 'Bicycle Form' ;
+
 show_form(
-    -TITLE            => 'Bicycle Form',
+    -HEADER           => header . start_html( $title ) .
+                         h3( $title ) .
+                         p( 'This is a test form. ' .
+                            'Any data entered is discarded.' ),
     -VALIDATE         => \&valid_form, # Form validation
     -ACCEPT           => \&on_valid_form,
     -BORDER           => 0,
@@ -37,17 +46,14 @@ show_form(
             },
         ],
     ) ;
-    
-sub valid_speeds { 
-    my $field = shift ;
 
-    if( $field =~ /^(?:[3567]|1[02458]|21)$/o ) { 
-        ( 1, '' ) ; 
-    }
-    else {
-        ( 0, "May only choose 3,5,6,7,10,12,14,15,18 or 21 speeds" ) ; 
-    }
-}
+
+sub valid_speeds { 
+
+    ( scalar( $_[0] =~ /^(?:[3567]|1[02458]|21)$/o ), 
+      "May only choose 3,5,6,7,10,12,14,15,18 or 21 speeds" ) ; 
+}   
+
 
 sub valid_form {
     my %field = @_ ;

@@ -1,8 +1,8 @@
 #!/usr/bin/perl -w
 
-# $Id: linux-help,v 1.18 1999/11/28 15:44:15 root Exp $
+# $Id: linux-help,v 1.19 2000/01/07 19:46:05 root Exp $
 
-# Copyright (c) Mark Summerfield 1999. All Rights Reserved.
+# Copyright (c) Mark Summerfield 1999-2000. All Rights Reserved.
 # May be used/distributed under the GPL.
 
 # WARNING - linux-help is provided as an example of QuickForm use, (although
@@ -205,11 +205,11 @@ sub show_file {
                 h3( colour( 'BLUE', $file ) ),
                 ;
             &new_search ;
-            print "<PRE>" ;
+            print "<pre>" ;
             foreach( @lines ) {
                 print encode_entities( $_ ) ;
             }
-            print "</PRE>" ;
+            print "</pre>" ;
             &new_search ;
             print end_html ;
             last CASE ;
@@ -230,7 +230,7 @@ sub show_file {
                 h3( colour( 'BLUE', $file ) ), 
                 ;
             &new_search ;
-            print "<PRE>" ;
+            print "<pre>" ;
             my $temp = $file ;
             $temp =~ s,.+/,,o ;
             $temp = "$TMP/$temp.cache" ;
@@ -248,7 +248,7 @@ sub show_file {
             else {
                 print "Timed out after $i seconds" ;
             }
-            print "</PRE>" ;
+            print "</pre>" ;
             &new_search ;
             print end_html ;
             last CASE ;
@@ -259,9 +259,9 @@ sub show_file {
                 h3( colour( 'BLUE', $file ) ),
                 ;
             &new_search ;
-            print "<PRE>" ;
+            print "<pre>" ;
             print `info --file $file` ;
-            print "</PRE>" ;
+            print "</pre>" ;
             &new_search ;
             print end_html ;
             last CASE ;
@@ -273,14 +273,14 @@ sub show_file {
                 ;
             &new_search ;
             print
-                p( colour( 'RED', "BUG: File <BR>$file<BR>of type $type $compress " .
-                                  "should be converted" ) ),
-                "<PRE>",
+                p( colour( 'RED', "BUG: File <br />$file<br />of type " .
+                                  "$type $compress should be converted" ) ),
+                "<pre>", 
                 ;
             foreach( @lines ) {
                 print encode_entities( $_ ) ;
             }
-            print "</PRE>" ;
+            print "</pre>" ;
             &new_search ;
             print end_html ;
         }
@@ -387,7 +387,7 @@ sub show_del {
         header,
         start_html( $TITLE ),
         h2( $TITLE ),
-        h3( qq{Deleted $type <FONT COLOR="BLUE">$value</FONT>} ),
+        h3( qq{Deleted $type <font color="BLUE">$value</font>} ),
         ;
     
     &new_search ;
@@ -412,7 +412,7 @@ sub show_matches {
         start_html( $TITLE ),
         h2( $TITLE ),
         h3( "Files matching ", join " or ", 
-            map { qq{<FONT COLOR="BLUE">$_</FONT>} } @Term ),
+            map { qq{<font color="BLUE">$_</font>} } @Term ),
         ;
 
     &new_search ;
@@ -426,17 +426,17 @@ sub show_matches {
     $CaseSensitive = '' unless param( $IGNORE_CASE ) eq 'X' ;
     %Found = () ;
     find( \&wanted, @path ) ; 
-    print "<OL>" ;
+    print "<ol>" ;
     foreach my $file ( sort by_filename keys %Found ) {
         my $name = &file_to_name( $file ) ;
         if( $file =~ /\.html?$/o ) {
-            print qq{<LI><A HREF="file://$file">$name</A>} ;
+            print qq{<li><a href="file://$file">$name</a></li>} ;
         }
         else {
-            print qq{<LI><A HREF="$URL?file=$file">$name</A>} ;
+            print qq{<li><a href="$URL?file=$file">$name</a></li>} ;
         }
     }
-    printf "</OL>" ;
+    printf "</ol>" ;
 
     &new_search ;
 
@@ -564,32 +564,32 @@ sub initialise {
 sub show_config {
 
     local $_ = <<__EOT__ ;
-<TABLE BORDER="1" CELLSPACING="0"><TR><TD COLSPAN="2" ALIGN="CENTER">
-<B>Configuration</B></TD></TR>
+<table border="1" cellspacing="0"><tr><td colspan="2" align="center">
+<b>Configuration</b></td></tr>
 __EOT__
 
     # Paths.
-    $_ .= qq{<TR><TD COLSPAN="2"><B>Paths:</B></TD></TR>} ;
+    $_ .= qq{<tr><td colspan="2"><b>Paths:</b></td></tr>} ;
     my %path = %{ thaw( $Data{"$PREFIX PATH"} ) } ;
     foreach my $key ( sort keys %path ) {
         my $path = join ", ", split /:/, $path{$key} ;
-        $_ .= qq{<TR><TD>$key </TD><TD>$path</TD></TR>} ;
+        $_ .= qq{<tr><td>$key </td><td>$path</td></tr>} ;
     }
 
-    $_ .= qq{<TR><TD><I>database</I> </TD><TD>$DB_FILE</TD></TR>} ;
+    $_ .= qq{<tr><td><i>database</i> </td><td>$DB_FILE</td></tr>} ;
 
-    $_ .= qq{<TR><TD><I><B>Program:</B></I> </TD><TD>$URL</TD></TR>} ;
+    $_ .= qq{<tr><td><i><b>Program:</b></i> </td><td>$URL</td></tr>} ;
 
-    $_ .= qq{<TR><TD><I><B>Del cache:</B></I> </TD><TD>$Data{"$PREFIX DEL_CACHE"}} .
-          qq{</TD></TR>} ;
+    $_ .= qq{<tr><td><i><b>Del cache:</b></i> </td><td>$Data{"$PREFIX DEL_CACHE"}} .
+          qq{</td></tr>} ;
 
-    $_ .= qq{<TR><TD><I><B>Max Terms:</B></I> } .
-          qq{</TD><TD>$Data{"$PREFIX MAX_TERMS"}</TD></TR>} ;
+    $_ .= qq{<tr><td><i><b>Max Terms:</b></i> } .
+          qq{</td><td>$Data{"$PREFIX MAX_TERMS"}</td></tr>} ;
 
     my $pagetype = join ", ", sort @{ thaw( $Data{"$PREFIX PAGETYPE"} ) } ;
-    $_ .= qq{<TR><TD><I><B>Page types:</B></I> </TD><TD>$pagetype</TD></TR>} ;
+    $_ .= qq{<tr><td><i><b>Page types:</b></i> </td><td>$pagetype</td></tr>} ;
 
-    $_ .= "</TABLE>" ;
+    $_ .= "</table>" ;
 }
 
 BEGIN {
@@ -597,45 +597,45 @@ BEGIN {
     $URL = url() ;
 
     $PREDEFINED_PAGES = <<__EOT__ ;
-<A HREF="$URL?type=info\&term=.info">Info pages</A>&nbsp;&nbsp;
-<A HREF="$URL?type=doc\&term=.">/usr/doc</A>&nbsp;&nbsp;
-<A HREF="$URL?type=doc\&term=HOWTO">HOWTO</A>&nbsp;&nbsp;
-<P>
-<A HREF="$URL?type=man\&term=1.">
-man 1\&nbsp;\&nbsp;\&nbsp;Executable programs or shell commands</A><BR>
-<A HREF="$URL?type=man\&term=1d.">
-man 1db\&nbsp;DB</A><BR>
-<A HREF="$URL?type=man\&term=1p.">
-man 1p\&nbsp;\&nbsp;Perl Functions</A><BR>
-<A HREF="$URL?type=man\&term=1x.">
-man 1x\&nbsp;\&nbsp;X Executable programs or shell commands</A><BR>
-<A HREF="$URL?type=man\&term=2.">
-man 2\&nbsp;\&nbsp;\&nbsp;System calls</A> (functions provided by the kernel)<BR>
-<A HREF="$URL?type=man\&term=3.">
-man 3\&nbsp;\&nbsp;\&nbsp;Library calls</A> (functions within system libraries)<BR>
-<A HREF="$URL?type=man\&term=3paper">
-man 3paper\&nbsp;Paper related</A><BR>
-<A HREF="$URL?type=man\&term=3pm.">
-man 3pm\&nbsp;Perl Modules</A><BR>
-<A HREF="$URL?type=man\&term=4.">
-man 4\&nbsp;\&nbsp;\&nbsp;Special files</A> (usually found in /dev)<BR>
-<A HREF="$URL?type=man\&term=5.">
-man 5\&nbsp;\&nbsp;\&nbsp;File formats and conventions</A> eg /etc/passwd<BR>
-<A HREF="$URL?type=man\&term=5vga.">
-man 5vga\&nbsp;VGA File formats and conventions</A><BR>
-<A HREF="$URL?type=man\&term=5x.">
-man 5x\&nbsp;\&nbsp;X File formats and conventions</A><BR>
-<A HREF="$URL?type=man\&term=6.">
-man 6\&nbsp;\&nbsp;\&nbsp;Games</A><BR>
-<A HREF="$URL?type=man\&term=7.">
-man 7\&nbsp;\&nbsp;\&nbsp;Macro packages and conventions</A> eg man(7), groff(7)<BR>
-<A HREF="$URL?type=man\&term=7vga.">
-man 7vga\&nbsp;VGA Macro packages and conventions</A><BR>
-<A HREF="$URL?type=man\&term=8.">
-man 8\&nbsp;\&nbsp;\&nbsp;System administration commands</A> (usually only for root)<BR>
-<A HREF="$URL?type=man\&term=9.">
-man 9\&nbsp;\&nbsp;\&nbsp;Kernel routines</A><BR>
-<HR>
+<a href="$URL?type=info\&term=.info">Info pages</a>&nbsp;&nbsp;
+<a href="$URL?type=doc\&term=.">/usr/doc</a>&nbsp;&nbsp;
+<a href="$URL?type=doc\&term=HOWTO">HOWTO</a>&nbsp;&nbsp;
+<p>
+<a href="$URL?type=man\&term=1.">
+man 1\&nbsp;\&nbsp;\&nbsp;Executable programs or shell commands</a><br />
+<a href="$URL?type=man\&term=1d.">
+man 1db\&nbsp;DB</a><br />
+<a href="$URL?type=man\&term=1p.">
+man 1p\&nbsp;\&nbsp;Perl Functions</a><br />
+<a href="$URL?type=man\&term=1x.">
+man 1x\&nbsp;\&nbsp;X Executable programs or shell commands</a><br />
+<a href="$URL?type=man\&term=2.">
+man 2\&nbsp;\&nbsp;\&nbsp;System calls</a> (functions provided by the kernel)<br />
+<a href="$URL?type=man\&term=3.">
+man 3\&nbsp;\&nbsp;\&nbsp;Library calls</a> (functions within system libraries)<br />
+<a href="$URL?type=man\&term=3paper">
+man 3paper\&nbsp;Paper related</a><br />
+<a href="$URL?type=man\&term=3pm.">
+man 3pm\&nbsp;Perl Modules</a><br />
+<a href="$URL?type=man\&term=4.">
+man 4\&nbsp;\&nbsp;\&nbsp;Special files</a> (usually found in /dev)<br />
+<a href="$URL?type=man\&term=5.">
+man 5\&nbsp;\&nbsp;\&nbsp;File formats and conventions</a> eg /etc/passwd<br />
+<a href="$URL?type=man\&term=5vga.">
+man 5vga\&nbsp;VGA File formats and conventions</a><br />
+<a href="$URL?type=man\&term=5x.">
+man 5x\&nbsp;\&nbsp;X File formats and conventions</a><br />
+<a href="$URL?type=man\&term=6.">
+man 6\&nbsp;\&nbsp;\&nbsp;Games</a><br />
+<a href="$URL?type=man\&term=7.">
+man 7\&nbsp;\&nbsp;\&nbsp;Macro packages and conventions</a> eg man(7), groff(7)<br />
+<a href="$URL?type=man\&term=7vga.">
+man 7vga\&nbsp;VGA Macro packages and conventions</a><br />
+<a href="$URL?type=man\&term=8.">
+man 8\&nbsp;\&nbsp;\&nbsp;System administration commands</a> (usually only for root)<br />
+<a href="$URL?type=man\&term=9.">
+man 9\&nbsp;\&nbsp;\&nbsp;Kernel routines</a><br />
+<hr />
 __EOT__
 
 }

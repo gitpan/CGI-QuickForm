@@ -1,6 +1,6 @@
 package CGI::QuickForm ; # Documented at the __END__.
 
-# $Id: QuickForm.pm,v 1.26 1999/12/01 20:51:10 root Exp root $
+# $Id: QuickForm.pm,v 1.30 2000/01/18 19:20:21 root Exp root $
 
 require 5.004 ;
 
@@ -15,7 +15,7 @@ use vars qw(
             %Translate 
             ) ;
 
-$VERSION   = '1.60' ; 
+$VERSION   = '1.64' ; 
 
 use Exporter() ;
 
@@ -27,7 +27,7 @@ use Exporter() ;
 # &colour is not documented because at some point it may be moved elsewhere.
 @EXPORT_OK = qw( colour color ) ;
 *color = \&colour ;
-sub colour { qq{<SPAN style="color:$_[0]">$_[1]</SPAN>} }
+sub colour { qq{<span style="color:$_[0]">$_[1]</span>} }
 
 
 my %Form ;
@@ -37,6 +37,7 @@ sub show_form {
     %Form = (
         -LANGUAGE         => 'en',         # Language to use for default messages
         -TITLE            => 'Quick Form', # Default page title and heading
+        -INTRO            => undef,
         -HEADER           => undef,      
         -FOOTER           => undef,
         -ACCEPT           => \&_on_valid_form,
@@ -69,6 +70,8 @@ sub show_form {
         $Form{"-STYLE_$style"}  = qq{ $Form{"-STYLE_$style"}} 
         if $Form{"-STYLE_$style"} ;
     }
+    $Form{"-STYLE_BUTTONS"} = 'center' 
+    if $Form{"-STYLE_BUTTONS"} =~ /^ CENT(?:ER|RE)$/oi ;
 
     $Form{-TABLE_OPTIONS} = " $Form{-TABLE_OPTIONS}" if $Form{-TABLE_OPTIONS} ;
 
@@ -125,7 +128,7 @@ sub _check_form {
         $Form{-FIELDS}[$i]{-INVALID} = 1, 
 
         $Form{-FIELDS}[$i]{-WHY}     = 
-        $valid ? undef : "<SPAN$Form{-STYLE_WHY}>$why</SPAN>", 
+        $valid ? undef : "<span$Form{-STYLE_WHY}>$why</span>", 
 
         $Form{-INVALID}++
         if ( $field{-REQUIRED} and not param( $field{-name} ) ) or not $valid ;
@@ -170,16 +173,16 @@ sub _show_form {
             header,
             start_html( $Form{-TITLE} ),
             h3( $Form{-TITLE} ),
-            p( $Translate{$Form{-LANGUAGE}}{-INTRO} ),
+            p( $Form{-INTRO} || $Translate{$Form{-LANGUAGE}}{-INTRO} ),
             ;
     }
 
-    print "<SPAN$Form{-STYLE_WHY}>$why</SPAN><BR>" if $invalid and defined $why ;
-    print $Translate{$Form{-LANGUAGE}}{-REQUIRED}  if $Form{-REQUIRED} ;
+    print "<span$Form{-STYLE_WHY}>$why</span><br />" if $invalid and defined $why ;
+    print $Translate{$Form{-LANGUAGE}}{-REQUIRED}    if $Form{-REQUIRED} ;
     print " $Translate{$Form{-LANGUAGE}}{-INVALID}" 
     if $invalid and not defined $why ;
 
-    print start_form, qq{<TABLE BORDER="$Form{-BORDER}"$Form{-TABLE_OPTIONS}>} ;
+    print start_form, qq{<table border="$Form{-BORDER}"$Form{-TABLE_OPTIONS}>} ;
 
     my @hidden ;
 
@@ -193,10 +196,10 @@ sub _show_form {
         my $invalid  = delete $field{-INVALID} ;
         $invalid     = $invalid ? $INVALID : '' ;
         my $why      = delete $field{-WHY} ;
-        print qq{<TR$Form{-STYLE_ROW}><TD$Form{-STYLE_FIELDNAME}>} .
+        print qq{<tr$Form{-STYLE_ROW}><td$Form{-STYLE_FIELDNAME}>} .
               qq{$field{-LABEL}$required$invalid} .
-              qq{</TD><TD$Form{-STYLE_FIELDVALUE}>} ;
-        print "<SPAN$Form{-STYLE_DESC}>$field{-DESC}</SPAN><BR>" if $field{-DESC} ;
+              qq{</td><td$Form{-STYLE_FIELDVALUE}>} ;
+        print "<span$Form{-STYLE_DESC}>$field{-DESC}</span><br />" if $field{-DESC} ;
         delete @field{-LABEL,-VALIDATE,-CLEAN,-SIZE,-MAXLENGTH,-ROWS,-COLUMNS} ;
         no strict "refs" ;
         local $^W = 0 ; # Switch off moans about undefined values.
@@ -204,10 +207,11 @@ sub _show_form {
         # Prefer to say why immediately after the field rather than in a
         # separate column.
         print " $why" if $invalid and defined $why ;
-        print "</TD></TR>" ;
+        print "</td></tr>" ;
     }
 
-    print "</TABLE><SPAN$Form{-STYLE_BUTTONS}>" ;
+    print "</table>", ( ( $Form{-STYLE_BUTTONS} eq 'center' ) ? 
+                        '<center>' : "<span$Form{-STYLE_BUTTONS}>" ) ;
 
     foreach my $fieldref ( @{$Form{-BUTTONS}} ) {
         if( $fieldref->{-DEFAULTS} ) {
@@ -218,7 +222,7 @@ sub _show_form {
         }
     }
 
-    print "</SPAN>" ;
+    print ( ( $Form{-STYLE_BUTTONS} eq 'center' ) ? '</center>' : '</span>' ) ;
 
     foreach my $fieldref ( @hidden ) {
         my %field = %$fieldref ;
@@ -256,11 +260,11 @@ sub _on_valid_form {
 
 BEGIN {
 
-    $REQUIRED = '<SPAN style="font-weight:bold;color:BLUE">+</SPAN>' ;
-    $INVALID  = '<SPAN style="font-weight:bold;color:RED">*</SPAN>' ;
+    $REQUIRED = '<span style="font-weight:bold;color:BLUE">+</span>' ;
+    $INVALID  = '<span style="font-weight:bold;color:RED">*</span>' ;
 
     %Translate = (
-         'cy' => {
+        'cy' => {
             -INTRO    => "Cofnodwch y wybodaeth.",
             -REQUIRED => "Mae angen llenwi'r adrannau sydd wedi eu clustnodi " .
                          "gyda $REQUIRED.",
@@ -269,19 +273,18 @@ BEGIN {
             },
         'de' => {
             -INTRO    => "Tragen Sie bitte die Informationen ein.",
-            -REQUIRED => "Die Dateneingabe Felder, die mit $REQUIRED " .
-                         "gekennzeichnet werden, werden angefordert.",
-            -INVALID  => "Die Dateneingabe Felder, die mit gekennzeichnet " .
-                         "werden $INVALID enthalten Sie Fehler oder seien " .
-                         "Sie leer.",
+            -REQUIRED => "Bitte die mit $REQUIRED gekennzeichneten Felder" .
+                         "ausf&uuml;llen.",
+            -INVALID  => "Die mit $INVALID gekennzeichneten Felder " .
+                         "enthalten Fehler oder sind leer.",
             },
-         'en' => {
+        'en' => {
             -INTRO    => "Please enter the information.",
             -REQUIRED => "Data entry fields marked with $REQUIRED are required.",
             -INVALID  => "Data entry fields marked with $INVALID contain errors " .
                          "or are empty.",
             },
-         'fr' => {
+        'fr' => {
             -INTRO    => "Veuillez &eacute;crire l'information.",
             -REQUIRED => "Des zones de saisie de donn&eacute;es " .
                          "identifi&eacute;es par " .
@@ -344,6 +347,7 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
         -BORDER           => 0,
         -FOOTER           => undef,
         -HEADER           => undef,      
+        -INTRO            => undef,
         -LANGUAGE         => 'en',
         -TITLE            => 'Test Form',
         -VALIDATE         => undef,       # Set this to validate the entire record
@@ -536,7 +540,7 @@ calls we must extract them and pass them ourselves, e.g. via a hidden field.
 
 C<-FOOTER> Optional string. This is used to present any text following the
 form and if used it must include everything up to and including final
-"</HTML>", e.g.:
+"</html>", e.g.:
 
     my $footer = p( "Thank's for your efforts." ) .
                  h6( "Copyright (c) 1999 Summer plc" ) . end_html ;
@@ -556,11 +560,17 @@ before the form proper. If you use this it must include everything from
         -HEADER => $header,
         # etc
 
+C<-INTRO> Optional string. If you specify C<-TITLE> you may want to specify
+this field too; it puts a paragraph of text before the form. The English
+default is "Please enter the information.", there is a default for each
+supported language (see C<-LANGUAGE>).
+
 C<-LANGUAGE> Optional string. This option accepts 'en' (english), 'cy'
-(welsh), 'de' (german) and 'fr' (french) - the French and German translations
-were done by Babelfish. ('english' is also supported for backward
-compatibility.) If people provide me with translations I will add other
-languages. This is used for the presentation of messages to the user, e.g.:
+(welsh), 'de' (german) and 'fr' (french) - the French translation
+was done by Babelfish - see CHANGES for the human translators. ('english' is
+also supported for backward compatibility.) If people provide me with
+translations I will add other languages. This is used for the presentation of
+messages to the user, e.g.:
 
     Please enter the information.
     Fields marked with + are required.
@@ -600,7 +610,7 @@ or now (preferred style):
         if( $field{'colour'} eq 'blue' and
             $field{'make'} eq 'estate' ) {
           $valid = 0 ; # No blue estates available.
-          $why   = '<B><I>No blue estates available</I></B>' ;
+          $why   = '<b><i>No blue estates available</i></b>' ;
         }
         # etc.
         ( $valid, $why ) ; 
@@ -717,8 +727,8 @@ or now (preferred style):
 
     sub valid_national_insurance {
         my $ni  = shift ;
-        my $why = '<I>Should be 2 letters followed by 7 ' .
-                  'digits then a letter</I>' ;
+        my $why = '<i>Should be 2 letters followed by 7 ' .
+                  'digits then a letter</i>' ;
     
         $ni = uc $ni ;
         my $valid = ( $ni =~ /^[A-Z]{2}\d{7}[A-Z]$/o ) ? 1 : 0 ;
@@ -742,18 +752,37 @@ in the SYNOPSIS above for examples of the most common field types.
 =head2 Styles
 
 If you wish to use a cascading style sheet with QuickForm then you need to set
-the -HEADER option to include a <LINK> tag which includes a reference to your
+the -HEADER option to include a <link> tag which includes a reference to your
 stylesheet.
 
 Whether you use a stylesheet for classes or in-line styles you can set the
 class or style using the -STYLE_* options, e.g.
 
     -STYLE_FIELDNAME  => qq{style="font-size:12pt;margin:2em;"},
-    -STYLE_FIELDVALUE => qq{class="mystyle.css"},
-    -STYLE_BUTTONS    => qq{style="font-family:Helvetica;text-align:center;"},
-    -STYLE_ROW        => qq{style="mystyle.css"},
+    -STYLE_FIELDVALUE => qq{class="valueclass"},
+    -STYLE_ROW        => qq{class="rowclass"},
     -STYLE_WHY        => qq{style="font-style:italic;color:red"},
     -STYLE_DESC       => qq{style="color:darkblue"},
+
+Because a popular browser cannot cope with this:
+
+    -STYLE_BUTTONS    => qq{style="font-family:Helvetica;text-align:center;"},
+
+which produces:
+
+    <span style="font-family:Helvetica;text-align:center;>
+    # buttons HTML
+    </span>
+
+QuickForm also supports (for C<-STYLE_BUTTONS> only) this:
+
+    -STYLE_BUTTONS    => 'center', # or 'centre'
+
+which produces:
+    
+    <center>
+    # buttons HTML
+    </center>
 
 For tables you can set options (because most browsers don't seem to support
 styles in tables):
@@ -890,14 +919,13 @@ production-quality program: it has no error checking and is I<not> secure.
 
         sub { 
             my $valid = $_[0] ? ( $min <= $_[0] and $_[0] <= $max ) : 1 ;
-            ( $valid, "<I>Should be between $min and $max inclusive</I>" ) ; 
+            ( $valid, "<i>Should be between $min and $max inclusive</i>" ) ; 
         } ;
     }
 
 =head2 INTRODUCTORY ARTICLE
 
-See http://www.perlpress.com/perl/quickform.html or
-http://www.queenwood.fsnet.co.uk/perl/quickform.html
+See http://www.perlpress.com/perl/quickform.html
 
 =head1 BUGS
 
@@ -912,7 +940,7 @@ See CHANGES for acknowledgements.
 
 =head1 COPYRIGHT
 
-Copyright (c) Mark Summerfield 1999. All Rights Reserved.
+Copyright (c) Mark Summerfield 1999-2000. All Rights Reserved.
 
 This module may be used/distributed/modified under the LGPL.
 

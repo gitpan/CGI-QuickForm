@@ -2,7 +2,7 @@
 
 # $Id: quickform,v 1.9 1999/11/07 14:12:58 root Exp root $
 
-# Copyright (c) Mark Summerfield 1999. All Rights Reserved.
+# Copyright (c) Mark Summerfield 1999-2000. All Rights Reserved.
 # May be used/distributed under the GPL.
 
 # WARNING - this program is provided as an example of QuickForm use and not as
@@ -15,25 +15,28 @@ use CGI::QuickForm qw( show_form colour ) ;
 
 
 show_form(
-    -CHECK    => ( query_string() =~ /QFCHK=0/o ? 0 : 1 ), 
-    -FOOTER   => qq{<A HREF="} . 
+    -CHECK     => ( query_string() =~ /QFCHK=0/o ? 0 : 1 ), 
+    -FOOTER    => qq{<a href="} . 
                  url() . 
                  qq{?QFCHK=0\&Age=28\&Surname=Bloggs\&Forename=Freda">} .
-                 qq{Defaults</A>} . 
+                 qq{Defaults</a>} . 
                  end_html,
-#    -LANGUAGE => 'de',
-    -BUTTONS  => [ { -name => 'Add' }, { -name => 'Del' } ],
-    -TITLE    => 'Test Form',
-    -ACCEPT   => \&on_valid_form, 
-    -SIZE     => 40,
-    -VALIDATE => sub { ( int rand(2), "<P>" . colour( 'RED', 'Randomly Invalid' ) ) },
-    -FIELDS   => [
+#    -LANGUAGE  => 'de',
+    -BUTTONS   => [ { -name => 'Add' }, { -name => 'Del' } ],
+#    -STYLE_BUTTONS => qq{style="font-family:Times;text-align:center;"},
+    -STYLE_BUTTONS => 'center',
+    -TITLE     => 'Test Form',
+    -ACCEPT    => \&on_valid_form, 
+    -SIZE      => 40,
+    -STYLE_WHY => 'style="font-style:italic;color:red"', 
+    -VALIDATE  => sub { ( int rand(2), "<P>" . colour( 'RED', 'Randomly Invalid' ) ) },
+    -FIELDS    => [
         {
             -LABEL    => 'Forename',
             -CLEAN    => \&cleanup, 
             -VALIDATE => sub { 
                             my $valid = length shift > 3 ; 
-                            ( $valid, '<I>Name too short</I>' ) ;
+                            ( $valid, 'Name too short' ) ;
                         }
         },
         {
@@ -42,7 +45,7 @@ show_form(
             -REQUIRED => 1,
             -VALIDATE => sub { 
                             my $valid = length shift > 3 ; 
-                            ( $valid, '<I>Name too short</I>' ) ;
+                            ( $valid, 'Name too short' ) ;
                         }
         },
         {
@@ -123,12 +126,12 @@ sub on_valid_form {
         h3( 'Test Form Data Accepted' ),
         p( "Thank you ", param( 'Forename' ), " for your data." ),
         ;
-    print qq{<TABLE BORDER="0">} ;
+    print qq{<table border="0">} ;
     local $_ ;
     foreach( @keys ) {
-        print "<TR><TD>$_</TD><TD>", param( $_ ), "</TD></TR>" ;
+        print "<tr><td>$_</td><td>", param( $_ ), "</td></tr>" ;
     }
-    print "</TABLE><P><HR>" ;
+    print "</table><p /><hr />" ;
 }
 
 
@@ -137,7 +140,7 @@ sub mk_valid_number {
 
     sub { 
         my $valid = $_[0] ? ( $min <= $_[0] and $_[0] <= $max ) : 1 ;
-        ( $valid, "<I>Number should be between $min and $max inclusive</I>" ) ;
+        ( $valid, "Number should be between $min and $max inclusive" ) ;
     } ;
 }
 

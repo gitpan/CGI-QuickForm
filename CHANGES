@@ -1,3 +1,32 @@
+2000/01/25
+
+Made all hand generated HTML in QuickForm XHTML compliant.
+Updated the examples to be XHTML compliant too.
+
+
+2000/01/18
+
+Alex Bransby-Williams pointed out that applying a style to buttons did not
+work in a popular browser, so now -STYLE_BUTTONS can either be in-line style
+(which will be put in <STYLE> tags), or 'CENTER' which will cause
+<CENTER>..buttons..</CENTER> to be output.
+
+
+2000/01/07
+
+Konrad Riedel corrected the German translations. Konrad also supplied a code
+snippet for having a -INTRO option (for users of -TITLE) which I have now
+included.
+
+I have placed an introductory article at
+http://www.perlpress.com/perl/quickform.html
+
+
+1999/12/07
+
+Minor documentation correction.
+
+
 1999/12/01
 
 Form-level error messages are now displayed before the required/invalid fields

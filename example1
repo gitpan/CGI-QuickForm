@@ -2,7 +2,7 @@
 
 # $Id: quickemailform,v 1.5 1999/11/07 14:12:58 root Exp root $
 
-# Copyright (c) Mark Summerfield 1999. All Rights Reserved.
+# Copyright (c) Mark Summerfield 1999-2000. All Rights Reserved.
 # May be used/distributed under the GPL.
 
 # WARNING - this program is provided as an example of QuickForm use and not as
@@ -16,7 +16,7 @@ use CGI::QuickForm ;
 show_form(
     -TITLE         => 'Test Form',
     -ACCEPT        => \&on_valid_form, 
-    -TABLE_OPTIONS => 'BGCOLOR="#EEEEEE"',
+    -TABLE_OPTIONS => 'bgcolor="#EEEEEE"',
     -FIELDS        => [
         {
             -LABEL    => 'Forename',
