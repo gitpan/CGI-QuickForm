@@ -21,7 +21,7 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
     ) ;
 
     sub on_valid_form {
-        my $name = param( 'Forename' ) ;
+        my $name = param( 'Name' ) ;
         my $age  = param( 'Age' ) ;
         open PEOPLE, ">>people.tab" ;
         print "$name\t$age\n" ;

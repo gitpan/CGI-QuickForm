@@ -1,6 +1,6 @@
 package CGI::QuickForm ; # Documented at the __END__.
 
-# $Id: QuickForm.pm,v 1.8 1999/09/19 19:50:15 root Exp root $
+# $Id: QuickForm.pm,v 1.9 1999/09/21 22:20:15 root Exp root $
 
 require 5.004 ;
 
@@ -15,7 +15,7 @@ use vars qw(
             %Translate 
             ) ;
 
-$VERSION = '1.20' ; 
+$VERSION = '1.21' ; 
 
 use Exporter() ;
 
@@ -241,7 +241,7 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
     ) ;
 
     sub on_valid_form {
-        my $name = param( 'Forename' ) ;
+        my $name = param( 'Name' ) ;
         my $age  = param( 'Age' ) ;
         open PEOPLE, ">>people.tab" ;
         print "$name\t$age\n" ;
