@@ -1,6 +1,6 @@
 package CGI::QuickForm ; # Documented at the __END__.
 
-# $Id: QuickForm.pm,v 1.16 1999/10/16 14:13:18 root Exp $
+# $Id: QuickForm.pm,v 1.18 1999/10/19 18:22:41 root Exp root $
 
 require 5.004 ;
 
@@ -15,7 +15,7 @@ use vars qw(
             %Translate 
             ) ;
 
-$VERSION   = '1.51' ; 
+$VERSION   = '1.52' ; 
 
 use Exporter() ;
 
@@ -161,10 +161,13 @@ sub _show_form {
 
     print start_form, qq{<TABLE BORDER="0">} ;
 
+    my @hidden ;
+
     foreach my $fieldref ( @{$Record{-FIELDS}} ) {
         my %field    = %$fieldref ;
         my $type     = delete $field{-TYPE} ;
-        next if $type eq 'submit' ;
+        push @hidden, $fieldref   if $type eq 'hidden' ;
+        next if $type eq 'submit' or $type eq 'hidden' ;
         my $required = delete $field{-REQUIRED} ;
         $required    = $required ? $REQUIRED : '' ;
         my $invalid  = delete $field{-INVALID} ;
@@ -185,6 +188,13 @@ sub _show_form {
 
     foreach my $fieldref ( @{$Record{-BUTTONS}} ) {
         print submit( %$fieldref ), " " ;
+    }
+
+    foreach my $fieldref ( @hidden ) {
+        my %field = %$fieldref ;
+        delete @field{-LABEL,-VALIDATE,-CLEAN,-SIZE,-MAXLENGTH,-ROWS,-COLUMNS,
+                      -TYPE,-REQUIRED,-INVALID,-WHY} ;
+        print hidden( %field ) ;
     }
 
     print end_form ; 

@@ -1,8 +1,12 @@
+1999/10/19
+
+Bug fix: no longer show labels for hidden fields.
+
 1999/10/16
 
 Added -CHECK option: this allows you to create URLs to a form that have
 different sets of default values without triggering validation until the user
-actually presses a button.
+actually presses a button. Again thanks to Paul Johnston.
 
 Added 3 (barely documented!) example scripts - they are not "production
 quality", and are provided solely to show various approaches to using
