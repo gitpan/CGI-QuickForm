@@ -682,19 +682,16 @@ Apache::Registry they you need to do the following:
 2. Ensure that any routines that return to mod_perl return OK. Normally this
 will be C<handler()> and C<on_valid_form()>. 
 
-3. Call C<show_form()> with C<-EXTRA_PATH> set to the name of the script.
-
-4. Convert your script into a module by wrapping the C<show_form()> call in a
+3. Convert your script into a module by wrapping the C<show_form()> call in a
 C<handler> subroutine etc.
 
-5. Copy the module into an Apache subdirectory in your C<@INC> path.
+4. Copy the module into an Apache subdirectory in your C<@INC> path.
 
-6. Edit your Apache httpd.conf (or perl.conf) to add a Location for the
+5. Edit your Apache httpd.conf (or perl.conf) to add a Location for the
 module. 
 
-7. If you are converting a script that uses C<url()> you may need to add the
-name of the script, e.g. C<url() . $ExtraPath> where C<$ExtraPath> is the last
-element of the Location name. 
+6. If you are converting a script that uses C<url()> you may need to add the
+name of the script, e.g. C<url() . path_info()>. 
 
 See C<example6> for a working example that covers all the points above.
 C<example6> also has notes at the beginning to explain how to set things up.

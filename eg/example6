@@ -43,9 +43,9 @@ package Apache::QuickTest ;
 # back to the form, perhaps with extra parameters, e.g. 
 #   url() . '?MyParam1=ONE'
 # you will need to change this to
-#   url() . $ExtraPath . '?MyParam1=ONE'
-# where $ExtraPath is the name of the script -- compare this example to
-# example2 in this regard in the -FOOTER setup of their show_form() calls.
+#   url() . path_info() . '?MyParam1=ONE'
+# compare this example to example2 in this regard in the -FOOTER setup of
+# their show_form() calls.
 #
 # You will also need to add the following lines at the beginning:
 #
@@ -63,16 +63,14 @@ use Apache::Constants qw( :common ) ;   # ADDED FOR MOD_PERL
 use CGI qw( :standard :html3 ) ;
 use CGI::QuickForm qw( show_form colour ) ;
 
-my $ExtraPath = '/quicktest' ; # ADDED FOR MOD_PERL
 
 sub handler { # ADDED FOR MOD_PERL
 
     show_form(
         -SPACE      => 0,
-        -EXTRA_PATH => $ExtraPath,
         -CHECK      => ( query_string() =~ /QFCHK=0/o ? 0 : 1 ), 
         -FOOTER     => qq{<a href="} . #" 
-                      url() . $ExtraPath .  # ADDED FOR MOD_PERL
+                      url() . path_info() .  # ADDED FOR MOD_PERL
                       qq{?QFCHK=0\&Age=28\&Surname=Bloggs\&Forename=Freda">} . #"
                       qq{Defaults</a>} . 
                       end_html,

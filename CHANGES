@@ -1,3 +1,12 @@
+2000/03/20
+
+Internal changes to improve memory efficiency.
+
+No longer need to use -EXTRA_PATH for non-registry mod_perl; scripts that do
+will still work because it will be ignored, and registry scripts don't need
+changing anyway. Updated example6 to reflect this.
+
+
 2000/03/17
 
 If you have CGI scripts that use QuickForm they will run as-is under mod_perl

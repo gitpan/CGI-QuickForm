@@ -1,6 +1,6 @@
 package CGI::QuickForm ; # Documented at the __END__.
 
-# $Id: QuickForm.pm,v 1.44 2000/03/18 15:13:35 root Exp root $
+# $Id: QuickForm.pm,v 1.47 2000/03/20 21:19:06 root Exp $
 
 require 5.004 ;
 
@@ -15,7 +15,7 @@ use vars qw(
             %Translate 
             ) ;
 
-$VERSION   = '1.75' ; 
+$VERSION   = '1.76' ; 
 
 use Exporter() ;
 
@@ -31,7 +31,7 @@ sub colour { qq{<span style="color:$_[0]">$_[1]</span>} }
 
 
 sub show_form {
-    my %Form = (
+    my %form = (
         -LANGUAGE         => 'en',         # Language to use for default messages
         -TITLE            => 'Quick Form', # Default page title and heading
         -INTRO            => undef,
@@ -46,7 +46,6 @@ sub show_form {
         -BORDER           => 0,
         -CHECK            => 1,
         -SPACE            => 0,
-        -EXTRA_PATH       => '',
         -STYLE_FIELDNAME  => '',
         -STYLE_FIELDVALUE => '',
         -STYLE_BUTTONS    => '',
@@ -60,151 +59,148 @@ sub show_form {
         ) ;
 
     # Backward compatibility.
-    $Form{-LANGUAGE} = 'en' if $Form{-LANGUAGE} eq 'english' ;
-    $Form{-BUTTONS}[0]{-name} = $Form{-BUTTONLABEL} if $Form{-BUTTONLABEL} ;
+    $form{-LANGUAGE} = 'en' if $form{-LANGUAGE} eq 'english' ;
+    $form{-BUTTONS}[0]{-name} = $form{-BUTTONLABEL} if $form{-BUTTONLABEL} ;
 
-    $Form{-REQUIRED} = 0 ; # Assume no fields are required.
+    $form{-REQUIRED} = 0 ; # Assume no fields are required.
 
     foreach my $style ( qw( FIELDNAME FIELDVALUE BUTTONS DESC WHY ) ) {
-        $Form{"-STYLE_$style"}  = qq{ $Form{"-STYLE_$style"}} 
-        if $Form{"-STYLE_$style"} ;
+        $form{"-STYLE_$style"}  = qq{ $form{"-STYLE_$style"}} 
+        if $form{"-STYLE_$style"} ;
     }
-    $Form{"-STYLE_BUTTONS"} = 'center' 
-    if $Form{"-STYLE_BUTTONS"} =~ /^ CENT(?:ER|RE)$/oi ;
+    $form{"-STYLE_BUTTONS"} = 'center' 
+    if $form{"-STYLE_BUTTONS"} =~ /^ CENT(?:ER|RE)$/oi ;
 
-    $Form{-TABLE_OPTIONS} = " $Form{-TABLE_OPTIONS}" if $Form{-TABLE_OPTIONS} ;
+    $form{-TABLE_OPTIONS} = " $form{-TABLE_OPTIONS}" if $form{-TABLE_OPTIONS} ;
 
     my $i = 0 ;
-    foreach my $fieldref ( @{$Form{-FIELDS}} ) {
-        my %field = %$fieldref ;
+    foreach my $fieldref ( @{$form{-FIELDS}} ) {
         # We have to write back to the original data, $fieldref only points to
         # a copy.
         foreach my $style ( qw( ROW FIELDNAME FIELDVALUE DESC ) ) {
-            my $value = $Form{-FIELDS}[$i]{"-STYLE_$style"} || $Form{"-STYLE_$style"} ;
-            $Form{-FIELDS}[$i]{"-STYLE_$style"} = $value ? " $value" : '' ;
+            my $value = $form{-FIELDS}[$i]{"-STYLE_$style"} || $form{"-STYLE_$style"} ;
+            $form{-FIELDS}[$i]{"-STYLE_$style"} = $value ? " $value" : '' ;
         }
-        $Form{-FIELDS}[$i]{-LABEL} = $field{-name}  unless $field{-LABEL} ;
-        $Form{-FIELDS}[$i]{-name}  = $field{-LABEL} unless $field{-name} ;
-        $Form{-FIELDS}[$i]{-TYPE}  = 'textfield'    unless $field{-TYPE} ;
-        $Form{-REQUIRED}           = 1              if $field{-REQUIRED} ;
-        if( $Form{-FIELDS}[$i]{-TYPE} eq 'textfield' ) { 
-            if( $Form{-SIZE} and not $field{-size} ) {
-                $Form{-FIELDS}[$i]{-size}      = $Form{-SIZE} ;
+        $form{-FIELDS}[$i]{-LABEL} = $fieldref->{-name}  unless $fieldref->{-LABEL} ;
+        $form{-FIELDS}[$i]{-name}  = $fieldref->{-LABEL} unless $fieldref->{-name} ;
+        $form{-FIELDS}[$i]{-TYPE}  = 'textfield'         unless $fieldref->{-TYPE} ;
+        $form{-REQUIRED}           = 1                   if $fieldref->{-REQUIRED} ;
+        if( $form{-FIELDS}[$i]{-TYPE} eq 'textfield' ) { 
+            if( $form{-SIZE} and not $fieldref->{-size} ) {
+                $form{-FIELDS}[$i]{-size}      = $form{-SIZE} ;
             }
-            if( $Form{-MAXLENGTH} and not $field{-maxlength} ) {
-                $Form{-FIELDS}[$i]{-maxlength} = $Form{-MAXLENGTH} ;
+            if( $form{-MAXLENGTH} and not $fieldref->{-maxlength} ) {
+                $form{-FIELDS}[$i]{-maxlength} = $form{-MAXLENGTH} ;
             }
         }
-        elsif( $Form{-FIELDS}[$i]{-TYPE} eq 'textarea' ) { 
-            if( $Form{-ROWS} and not $field{-rows} ) {
-                $Form{-FIELDS}[$i]{-rows}      = $Form{-ROWS} ;
+        elsif( $form{-FIELDS}[$i]{-TYPE} eq 'textarea' ) { 
+            if( $form{-ROWS} and not $fieldref->{-rows} ) {
+                $form{-FIELDS}[$i]{-rows}      = $form{-ROWS} ;
             }
-            if( $Form{-COLUMNS} and not $field{-columns} ) {
-                $Form{-FIELDS}[$i]{-columns}   = $Form{-COLUMNS} ;
+            if( $form{-COLUMNS} and not $fieldref->{-columns} ) {
+                $form{-FIELDS}[$i]{-columns}   = $form{-COLUMNS} ;
             }
         }
         $i++ ;
     }
 
-    if( $Form{-CHECK} and param() ) {
-        &_check_form( \%Form ) ;
+    if( $form{-CHECK} and param() ) {
+        &_check_form( \%form ) ;
     }
     else {
-        &_show_form( \%Form ) ;
+        &_show_form( \%form ) ;
     }
 }
 
 
 sub _check_form {
-    my %Form = %{$_[0]} ;
+    my $formref = shift ;
 
-    $Form{-INVALID} = 0 ;
-    my %Field ;
+    $formref->{-INVALID} = 0 ;
+    my %field ;
 
     my $i = 0 ;
-    foreach my $fieldref ( @{$Form{-FIELDS}} ) {
-        my %field = %$fieldref ;
+    foreach my $fieldref ( @{$formref->{-FIELDS}} ) {
         # We have to write back to the original data, $fieldref only points to
         # a copy.
-        my( $valid, $why ) = defined $field{-VALIDATE} ?
-                                   &{$field{-VALIDATE}}( param( $field{-name} ) ) :
-                                   ( 1, '' ) ;
-        $Form{-FIELDS}[$i]{-INVALID} = 1, 
+        my( $valid, $why ) = 
+            defined $fieldref->{-VALIDATE} ?
+                  &{$fieldref->{-VALIDATE}}( param( $fieldref->{-name} ) ) :
+                  ( 1, '' ) ;
+        $formref->{-FIELDS}[$i]{-INVALID} = 1, 
 
-        $Form{-FIELDS}[$i]{-WHY}     = 
-        $valid ? undef : "<span$Form{-STYLE_WHY}>$why</span>", 
+        $formref->{-FIELDS}[$i]{-WHY} = $valid ? 
+            undef : "<span$formref->{-STYLE_WHY}>$why</span>", 
 
-        $Form{-INVALID}++
-        if ( $field{-REQUIRED} and not param( $field{-name} ) ) or not $valid ;
+        $formref->{-INVALID}++
+        if ( $fieldref->{-REQUIRED} and not param( $fieldref->{-name} ) ) or 
+        not $valid ;
 
-        $Field{$field{-name}} = param( $field{-name} ) ;
+        $field{$fieldref->{-name}} = param( $fieldref->{-name} ) ;
         $i++ ;
     }
 
-    if( not $Form{-INVALID} and defined $Form{-VALIDATE} ) {
+    if( not $formref->{-INVALID} and defined $formref->{-VALIDATE} ) {
         # If all the individual parts are valid, check that the record as a
         # whole is valid. The parameters are presented in a name=>value hash.
-        my( $valid, $why ) = &{$Form{-VALIDATE}}( %Field ) ;
-        $Form{-INVALID}    = not $valid ;
-        $Form{-WHY}        = $why ;
+        my( $valid, $why )   = &{$formref->{-VALIDATE}}( %field ) ;
+        $formref->{-INVALID} = not $valid ;
+        $formref->{-WHY}     = $why ;
     }
 
-    if( $Form{-INVALID} ) {
-        &_show_form( \%Form ) ;
+    if( $formref->{-INVALID} ) {
+        &_show_form( $formref ) ;
     }
     else {
         # Clean any fields that have a clean routine specified.
-        foreach my $fieldref ( @{$Form{-FIELDS}} ) {
-            my %field = %$fieldref ;
-            param( $field{-name}, &{$field{-CLEAN}}( param( $field{-name} ) ) )
-            if defined $field{-CLEAN} ;
+        foreach my $fieldref ( @{$formref->{-FIELDS}} ) {
+            param( $fieldref->{-name}, 
+                &{$fieldref->{-CLEAN}}( param( $fieldref->{-name} ) ) )
+            if defined $fieldref->{-CLEAN} ;
         }
-        &{$Form{-ACCEPT}} ;
+        &{$formref->{-ACCEPT}} ;
     }
 }
 
 
 sub _show_form {
-    my %Form = %{$_[0]} ;
+    my $formref = shift ;
 
-    my $invalid  = delete $Form{-INVALID} ;
-    my $why      = delete $Form{-WHY} ;
-    my $n        = delete $Form{-SPACE} ? "\n" : '' ;
+    my $invalid  = delete $formref->{-INVALID} ;
+    my $why      = delete $formref->{-WHY} ;
+    my $n        = delete $formref->{-SPACE} ? "\n" : '' ;
 
-    if( $Form{-HEADER} ) {
-        print "$Form{-HEADER}$n" ;
+    if( $formref->{-HEADER} ) {
+        print "$formref->{-HEADER}$n" ;
     }
     else {
         print 
             header,
-            start_html( $Form{-TITLE} ), $n,
-            h3( $Form{-TITLE} ), $n,
-            p( $Form{-INTRO} || $Translate{$Form{-LANGUAGE}}{-INTRO} ), $n,
+            start_html( $formref->{-TITLE} ), $n,
+            h3( $formref->{-TITLE} ), $n,
+            p( $formref->{-INTRO} || $Translate{$formref->{-LANGUAGE}}{-INTRO} ), $n,
             ;
     }
 
-    print "<span$Form{-STYLE_WHY}>$why</span><br />$n" if $invalid and defined $why ;
-    print "$Translate{$Form{-LANGUAGE}}{-REQUIRED}$n"  if $Form{-REQUIRED} ;
-    print " $Translate{$Form{-LANGUAGE}}{-INVALID}$n" 
+    print "<span$formref->{-STYLE_WHY}>$why</span><br />$n" 
+    if $invalid and defined $why ;
+    print "$Translate{$formref->{-LANGUAGE}}{-REQUIRED}$n" if $formref->{-REQUIRED} ;
+    print " $Translate{$formref->{-LANGUAGE}}{-INVALID}$n" 
     if $invalid and not defined $why ;
 
-    # Could probably simply be
-    #   print start_form( -action => script_name() . $Form{-EXTRA_PATH} ) ;
-    # but wanted to be absolutely sure I didn't change behaviour for
-    # non-mod_perl users.
     if( defined( $ENV{'GATEWAY_INTERFACE'} ) and 
         ( $ENV{'GATEWAY_INTERFACE'} =~ /^CGI-Perl/ ) ) {
-        print start_form( -action => script_name() . $Form{-EXTRA_PATH} ) ;
+        print start_form( -action => script_name() . path_info() ) ;
     }
     else {
         print start_form ; 
     }
 
-    print qq{$n<table border="$Form{-BORDER}"$Form{-TABLE_OPTIONS}>$n} ;
+    print qq{$n<table border="$formref->{-BORDER}"$formref->{-TABLE_OPTIONS}>$n} ;
 
     my @hidden ;
 
-    foreach my $fieldref ( @{$Form{-FIELDS}} ) {
+    foreach my $fieldref ( @{$formref->{-FIELDS}} ) {
         my %field      = %$fieldref ;
         my $type       = delete $field{-TYPE} ;
         push @hidden, $fieldref   if $type eq 'hidden' ;
@@ -231,10 +227,10 @@ sub _show_form {
         print "</td>$n</tr>$n" ;
     }
 
-    print "</table>$n", ( ( $Form{-STYLE_BUTTONS} eq 'center' ) ? 
-                        '<center>' : "<span$Form{-STYLE_BUTTONS}>" ) ;
+    print "</table>$n", ( ( $formref->{-STYLE_BUTTONS} eq 'center' ) ? 
+                        '<center>' : "<span$formref->{-STYLE_BUTTONS}>" ) ;
 
-    foreach my $fieldref ( @{$Form{-BUTTONS}} ) {
+    foreach my $fieldref ( @{$formref->{-BUTTONS}} ) {
         if( $fieldref->{-DEFAULTS} ) {
             print defaults( $fieldref->{-name} || 'Clear' ), " " ;
         }
@@ -243,7 +239,7 @@ sub _show_form {
         }
     }
 
-    print ( ( $Form{-STYLE_BUTTONS} eq 'center' ) ? '</center>' : '</span>' ) ;
+    print ( ( $formref->{-STYLE_BUTTONS} eq 'center' ) ? '</center>' : '</span>' ) ;
 
     foreach my $fieldref ( @hidden ) {
         my %field = %$fieldref ;
@@ -254,8 +250,8 @@ sub _show_form {
 
     print $n, end_form, $n ; 
 
-    if( $Form{-FOOTER} ) {
-        print $Form{-FOOTER} ;
+    if( $formref->{-FOOTER} ) {
+        print $formref->{-FOOTER} ;
     }
     else {
         print hr, end_html ;
@@ -1011,19 +1007,16 @@ Apache::Registry they you need to do the following:
 2. Ensure that any routines that return to mod_perl return OK. Normally this
 will be C<handler()> and C<on_valid_form()>. 
 
-3. Call C<show_form()> with C<-EXTRA_PATH> set to the name of the script.
-
-4. Convert your script into a module by wrapping the C<show_form()> call in a
+3. Convert your script into a module by wrapping the C<show_form()> call in a
 C<handler> subroutine etc.
 
-5. Copy the module into an Apache subdirectory in your C<@INC> path.
+4. Copy the module into an Apache subdirectory in your C<@INC> path.
 
-6. Edit your Apache httpd.conf (or perl.conf) to add a Location for the
+5. Edit your Apache httpd.conf (or perl.conf) to add a Location for the
 module. 
 
-7. If you are converting a script that uses C<url()> you may need to add the
-name of the script, e.g. C<url() . $ExtraPath> where C<$ExtraPath> is the last
-element of the Location name. 
+6. If you are converting a script that uses C<url()> you may need to add the
+name of the script, e.g. C<url() . path_info()>. 
 
 See C<example6> for a working example that covers all the points above.
 C<example6> also has notes at the beginning to explain how to set things up.
