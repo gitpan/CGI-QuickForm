@@ -345,6 +345,8 @@ None that have come to light (yet).
 
 1999/08/28  Version 1.00.
 
+1999/09/01  Fixed error in Makefile.PL
+
 =head1 AUTHOR
 
 Mark Summerfield. I can be contacted as <summer@chest.ac.uk> -

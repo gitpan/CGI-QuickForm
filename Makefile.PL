@@ -6,7 +6,7 @@ use ExtUtils::MakeMaker ;
 WriteMakefile(
     'NAME'         => 'CGI::QuickForm',
     'VERSION_FROM' => 'QuickForm.pm', # finds $VERSION
-    'DISTNAME'     => 'CGI::QuickForm',
+    'DISTNAME'     => 'CGI-QuickForm',
     ($] >= 5.005 ?
         (
             ABSTRACT => 'Provides quick CGI forms',
