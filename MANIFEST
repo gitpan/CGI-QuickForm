@@ -8,4 +8,4 @@ example2
 example3
 example4
 example5
-quickform.t
+t/quickform.t

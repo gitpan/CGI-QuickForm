@@ -1,3 +1,8 @@
+2000/02/18
+
+Corrected the tarball so that make test will now work.
+
+
 2000/02/09
 
 Fixed two bugs introduced with the greater style versatility.

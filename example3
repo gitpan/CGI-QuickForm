@@ -34,7 +34,7 @@ use HTML::Entities ;
 use Storable qw( freeze thaw ) ;
 use URI::Escape ;
 
-use vars qw( $VERSION ) ; $VERSION = '1.03' ;
+use vars qw( $VERSION ) ; $VERSION = '1.04' ;
 
 use vars qw( $URL $PREDEFINED_PAGES ) ;
 
@@ -482,7 +482,8 @@ sub reduce_terms {
     my $min = 1 ;
     while( scalar keys %SearchTerm > $max ) {
         foreach my $term ( %SearchTerm ) {
-            delete $SearchTerm{$term} if $SearchTerm{$term} <= $min ;
+            delete $SearchTerm{$term} 
+            if exists $SearchTerm{$term} and $SearchTerm{$term} <= $min ;
         }
         $min++ ;
     }

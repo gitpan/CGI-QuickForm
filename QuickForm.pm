@@ -1,6 +1,6 @@
 package CGI::QuickForm ; # Documented at the __END__.
 
-# $Id: QuickForm.pm,v 1.33 2000/02/09 23:21:38 root Exp root $
+# $Id: QuickForm.pm,v 1.34 2000/02/18 22:25:33 root Exp root $
 
 require 5.004 ;
 
@@ -15,7 +15,7 @@ use vars qw(
             %Translate 
             ) ;
 
-$VERSION   = '1.71' ; 
+$VERSION   = '1.72' ; 
 
 use Exporter() ;
 
