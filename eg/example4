@@ -48,25 +48,23 @@ use HTML::Entities ;
 use URI::Escape ;
 
 use vars qw( $VERSION ) ;
-$VERSION     = '1.04' ;
+$VERSION     = '1.041' ;
 
-use readonly
-        '$ACTION'  => '.qfdb',
+my $ACTION  = '.qfdb',
 
-        '$ADD'     => 'Add', 
-        '$DELETE'  => 'Delete', 
-        '$EDIT'    => 'Edit', 
-        '$FIND'    => 'Find', 
-        '$LIST'    => 'List', 
-        '$ORDERBY' => 'OrderBy', 
-        '$REMOVE'  => 'Remove', 
-        '$SEARCH'  => 'Search', 
-        '$UPDATE'  => 'Update', 
-        '$WHERE'   => 'Where', 
-        ;
+my $ADD     = 'Add' ; 
+my $DELETE  = 'Delete' ; 
+my $EDIT    = 'Edit' ; 
+my $FIND    = 'Find' ; 
+my $LIST    = 'List' ; 
+my $ORDERBY = 'OrderBy' ; 
+my $REMOVE  = 'Remove' ; 
+my $SEARCH  = 'Search' ; 
+my $UPDATE  = 'Update' ; 
+my $WHERE   = 'Where' ; 
 
 # Database specific start
-use readonly '$SHOW_SQL' => 0 ; 
+my $SHOW_SQL = 0 ; 
 
 
 my %COLOUR          = (
@@ -79,18 +77,16 @@ my %COLOUR          = (
     -LIST_BAND2 => '#EDEDED',
     ) ;
 
-use readonly
-        '$TITLE'           => 'Contacts', 
-        '$DATABASE'        => '/root/web/db/contactsqf', 
-        '$KEYFIELD'        => 'ID', 
-        '$INITIAL_ORDERBY' => 'ID', 
+my $TITLE           = 'Contacts' ; 
+my $DATABASE        = '/root/web/db/contactsqf' ; 
+my $KEYFIELD        = 'ID' ; 
+my $INITIAL_ORDERBY = 'ID' ; 
 # The XBase driver only supports a single WHERE item and does not support
 # LIKE. The CSV driver does not appear to support WHERE at all.
-#my $TABLE    => 'contacts_csv',
-#my $CONNECT  => "DBI:CSV:f_dir=>$DATABASE",
-        '$TABLE'           => 'contacts', 
-        '$CONNECT'         => "DBI:XBase:/root/web/db/contactsqf", 
-        ;
+#   my $TABLE    = 'contacts_csv' ;
+#   my $CONNECT  = "DBI:CSV:f_dir=$DATABASE" ;
+my $TABLE           = 'contacts' ; 
+my $CONNECT         = "DBI:XBase:/root/web/db/contactsqf" ; 
 
 my @FIELD    = (
             {

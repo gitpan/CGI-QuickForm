@@ -1,3 +1,19 @@
+2000/05/24
+
+Added new options -NAME, -ONSUBMIT and -JSCRIPT for Javascript users, plus
+updated the German translation, all thanks to a patch supplied by Frank
+Ridderbusch. Frank also pointed out that starting $why strings with a <br />
+helps Netscape display forms properly (see the updated example2). He also
+reported some problems under mod_perl; I'm using testing on ancient versions
+at the moment and won't be able to do much until Debian 2.2 is on CD.
+
+Added new options -USER_REQUIRED and -USER_INVALID; you can now specify your
+own error message strings in these by setting -LANGUAGE to 'user'. This was
+due to a request by Alex Bransby-Williams. example5 has been updated to show
+examples of these. This means I won't be accepting any new translations since
+you can write your own.
+
+
 2000/04/23
 
 You can now override the red * and blue + with any HTML you like to indicate

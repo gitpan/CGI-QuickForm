@@ -12,20 +12,24 @@
 
 use strict ;
 
-use vars qw( $VERSION ) ; $VERSION = '0.1.0' ;
+use vars qw( $VERSION ) ; $VERSION = '0.12' ;
 
 use CGI qw( :standard :html3 ) ;
 use lib '.' ; # This is 'cos my host provider hasn't installed QuickForm!
 use CGI::QuickForm ;
 
-use readonly '$TITLE' => 'Bicycle Form' ;
+my $TITLE = 'Bicycle Form' ;
 
 show_form(
+    -LANGUAGE         => 'user',
+    -USER_REQUIRED    => 'Put the data here: ~R~ OK!<br />',
+    -USER_INVALID     => "I don't mean to be rude but look at these ~I~ fields!",
     -HEADER           => header . start_html( $TITLE ) .
                          h3( $TITLE ) .
                          p( 'This is a test form. ' .
                             'Any data entered is discarded.' ),
     -VALIDATE         => \&valid_form, # Form validation
+#    -ACCEPT           => \&on_valid_form_redirect,
     -ACCEPT           => \&on_valid_form,
     -BORDER           => 0,
     -STYLE_FIELDNAME  => 'style="background-color:#AAAAAA"',
@@ -75,7 +79,7 @@ show_form(
 sub valid_speeds { 
 
     ( scalar( $_[0] =~ /^(?:[3567]|1[02458]|21)$/o ), 
-      "May only choose 3,5,6,7,10,12,14,15,18 or 21 speeds" ) ; 
+      "<br />May only choose 3,5,6,7,10,12,14,15,18 or 21 speeds" ) ; 
 }   
 
 
@@ -108,4 +112,12 @@ sub on_valid_form {
           qq{<a href="/perl/quickform.html#examples">QuickForm examples</a>},
           end_html ;
 }
+
+
+sub on_valid_form_redirect {
+    print redirect( -uri => "http://localhost/index.html" ),
+          start_html( 'Bicycle Form' ), h3( 'Bicycle Form' ),
+          end_html ;
+}
+
 

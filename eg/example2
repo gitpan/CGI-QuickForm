@@ -47,7 +47,7 @@ show_form(
             -CLEAN      => \&cleanup, 
             -VALIDATE   => sub { 
                             my $valid = length shift > 3 ; 
-                            ( $valid, 'Name too short' ) ;
+                            ( $valid, '<br />Name too short' ) ;
                         }
         },
         {
@@ -57,7 +57,7 @@ show_form(
             -REQUIRED   => 1,
             -VALIDATE   => sub { 
                                 my $valid = length shift > 3 ; 
-                                ( $valid, 'Name too short' ) ;
+                                ( $valid, '<br />Name too short' ) ;
                             }
         },
         {
@@ -166,7 +166,7 @@ sub mk_valid_number {
 
     sub { 
         my $valid = $_[0] ? ( $min <= $_[0] and $_[0] <= $max ) : 1 ;
-        ( $valid, "Number should be between $min and $max inclusive" ) ;
+        ( $valid, "<br />Number should be between $min and $max inclusive" ) ;
     } ;
 }
 

@@ -1,6 +1,6 @@
 package CGI::QuickForm ; # Documented at the __END__.
 
-# $Id: QuickForm.pm,v 1.57 2000/04/23 14:19:40 root Exp root $
+# $Id: QuickForm.pm,v 1.62 2000/05/25 20:29:04 root Exp $
 
 require 5.004 ;
 
@@ -14,13 +14,13 @@ use vars qw(
             %Translate 
             ) ;
 
-$VERSION   = '1.85' ; 
+$VERSION = '1.88' ; 
 
 use Exporter() ;
 
-@ISA       = qw( Exporter ) ;
+@ISA     = qw( Exporter ) ;
 
-@EXPORT    = qw( show_form ) ;
+@EXPORT  = qw( show_form ) ;
 
 
 # &colour is not documented because at some point it may be moved elsewhere.
@@ -32,10 +32,17 @@ sub colour { qq{<span style="color:$_[0]">$_[1]</span>} }
 sub show_form {
     my %form = (
         -LANGUAGE         => 'en',         # Language to use for default messages
+        -USER_REQUIRED    => undef,
+        -USER_INVALID     => undef,
+        -REQUIRED_HTML    => '<span style="font-weight:bold;color:BLUE">+</span>',
+        -INVALID_HTML     => '<span style="font-weight:bold;color:RED">*</span>',
         -TITLE            => 'Quick Form', # Default page title and heading
         -INTRO            => undef,
         -HEADER           => undef,      
         -FOOTER           => undef,
+        -NAME             => '',
+        -JSCRIPT          => '',
+        -ONSUBMIT         => '',
         -ACCEPT           => \&_on_valid_form,
         -VALIDATE         => undef,        # Call this to validate entire form
         -SIZE             => undef,
@@ -46,8 +53,6 @@ sub show_form {
         -CHECK            => 1,
         -SPACE            => 0,
         -MULTI_COLUMN     => 0,
-        -REQUIRED_HTML    => '<span style="font-weight:bold;color:BLUE">+</span>',
-        -INVALID_HTML     => '<span style="font-weight:bold;color:RED">*</span>',
         -STYLE_FIELDNAME  => '',
         -STYLE_FIELDVALUE => '',
         -STYLE_BUTTONS    => '',
@@ -64,6 +69,12 @@ sub show_form {
     $form{-LANGUAGE} = 'en' if $form{-LANGUAGE} eq 'english' ;
     $form{-BUTTONS}[0]{-name} = $form{-BUTTONLABEL} if $form{-BUTTONLABEL} ;
 
+    if( $form{-LANGUAGE} eq 'user' ) {
+        $Translate{'user'}{-REQUIRED} =
+            $form{-USER_REQUIRED} || $Translate{'en'}{-REQUIRED} ;
+        $Translate{'user'}{-INVALID}  =
+            $form{-USER_INVALID}  || $Translate{'en'}{-INVALID} ;
+    }
     $Translate{$form{-LANGUAGE}}{-REQUIRED} =~ s/~R~/$form{-REQUIRED_HTML}/go ;
     $Translate{$form{-LANGUAGE}}{-INVALID}  =~ s/~I~/$form{-INVALID_HTML}/go ;
 
@@ -146,7 +157,7 @@ sub _check_form {
         $formref->{-FIELDS}[$i]{-INVALID} = 1, 
 
         $formref->{-FIELDS}[$i]{-WHY} = $valid ? 
-            undef : "<span$formref->{-STYLE_WHY}>$why</span>", 
+            undef : "<span$formref->{-STYLE_WHY}>$why</span>",
 
         $formref->{-INVALID}++
         if ( $fieldref->{-REQUIRED} and not param( $fieldref->{-name} ) ) or 
@@ -192,7 +203,7 @@ sub _show_form {
     else {
         print 
             header,
-            start_html( $formref->{-TITLE} ), $n,
+            start_html( $formref->{-TITLE}, $formref->{-JSCRIPT} ), $n,
             h3( $formref->{-TITLE} ), $n,
             p( $formref->{-INTRO} || $Translate{$formref->{-LANGUAGE}}{-INTRO} ), $n,
             ;
@@ -200,17 +211,24 @@ sub _show_form {
 
     print "<span$formref->{-STYLE_WHY}>$why</span><br />$n" 
     if $invalid and defined $why ;
-    print "$Translate{$formref->{-LANGUAGE}}{-REQUIRED}$n" if $formref->{-REQUIRED} ;
-    print " $Translate{$formref->{-LANGUAGE}}{-INVALID}$n" 
+    print "$Translate{$formref->{-LANGUAGE}}{-REQUIRED}$n"
+	if $formref->{-REQUIRED} ;
+    print " $Translate{$formref->{-LANGUAGE}}{-INVALID}$n"
     if $invalid and not defined $why ;
 
     if( defined( $ENV{'GATEWAY_INTERFACE'} ) and 
         ( $ENV{'GATEWAY_INTERFACE'} =~ /^CGI-Perl/ ) ) {
         print start_form( 
-                -action => ( script_name() || '' ) . ( path_info() || '' ) ) ;
+		        -name     => $formref->{-NAME},
+		        -onSubmit => $formref->{-ONSUBMIT},
+                -action   => ( script_name() || '' ) . ( path_info() || '' ) 
+                ), $n ;
     }
     else {
-        print start_form ; 
+        print start_form(
+                -name     => $formref->{-NAME},
+			    -onSubmit => $formref->{-ONSUBMIT} 
+                ), $n ;
     }
 
     print qq{$n<table border="$formref->{-BORDER}"$formref->{-TABLE_OPTIONS}>$n} ;
@@ -319,8 +337,8 @@ BEGIN {
             },
         'de' => {
             -INTRO    => "Tragen Sie bitte die Informationen ein.",
-            -REQUIRED => "Bitte die mit ~R~ gekennzeichneten Felder" .
-                         "ausf&uuml;llen.",
+            -REQUIRED => "Bitte mindestens die mit ~R~ " .
+                         "gekennzeichneten Felder ausf&uuml;llen.",
             -INVALID  => "Die mit ~I~ gekennzeichneten Felder " .
                          "enthalten Fehler oder sind leer.",
             },
@@ -402,6 +420,8 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
         -HEADER           => undef,      
         -INTRO            => undef,
         -LANGUAGE         => 'en',
+        -USER_REQUIRED    => undef,
+        -USER_INVALID     => undef,
         -TITLE            => 'Test Form',
         -REQUIRED_HTML    => '<span style="font-weight:bold;color:BLUE">+</span>',
         -INVALID_HTML     => '<span style="font-weight:bold;color:RED">*</span>',
@@ -413,6 +433,9 @@ CGI::QuickForm - Perl module to provide quick CGI forms.
         -CHECK            => 1,
         -SPACE            => 0, # Output some newlines to assist debugging if 1
         -MULTI_COLUMN     => 0,
+        -NAME             => undef,
+        -ONSUBMIT         => undef,
+        -JSCRIPT          => '',
         -STYLE_FIELDNAME  => '',
         -STYLE_FIELDVALUE => '',
         -STYLE_BUTTONS    => '',
@@ -677,7 +700,16 @@ You could use an image tag for example:
 
     <img src="/images/invalid.jpg" alt="*" />
 
+Note that if you use your own C<-USER_REQUIRED> or C<-USER_INVALID> strings,
+this string will replace the sequence C<~I~> if it occurs.
+
 See C<example1> and the companion option C<-REQUIRED_HTML>.
+
+=item C<-JSCRIPT>
+
+Optional string. If using Javascript you can include the code in this string
+and it will be put into the html that QuickForm outputs. (See C<-NAME> and
+C<-ONSUBMIT>.)
 
 =item C<-LANGUAGE> 
 
@@ -692,6 +724,10 @@ the user, e.g.:
     Fields marked with + are required.
     Fields marked with * contain errors or are empty.
 
+If you want to create your own 'required' or 'invalid' strings using the
+C<-USER_REQUIRED> and/or C<-USER_INVALID> options you I<must> set C<-LANGUAGE>
+to 'user'. 
+
 See C<example1>.
 
 =item C<-MULTI_COLUMN> 
@@ -704,6 +740,18 @@ some fields with C<-END_ROW => 1,>. See the field-level options C<-START_ROW>,
 C<-END_ROW> and C<-COLSPAN>. See C<example2> and C<example4> which have been updated
 to demonstrate these options.
 
+=item C<-NAME>
+
+Optional string. If specified this string is given to the start_form()
+function as its C<-name> option; used for identifying the form for Javascript.
+(See C<-JSCRIPT> and C<-ONSUBMIT>.)
+
+=item C<-ONSUBMIT>
+
+Optional string. If specified this string is given to the start_form()
+function as its C<-onSubmit> option; used with Javascript.
+(See C<-JSCRIPT> and C<-NAME>.)
+
 =item C<-REQUIRED_HTML> 
 
 Optional HTML string. Default is:
@@ -711,6 +759,10 @@ Optional HTML string. Default is:
     <span style="font-weight:bold;color:BLUE">+</span>
 
 You can over-ride this to set your own marker to indicate a required field.
+
+Note that if you use your own C<-USER_REQUIRED> or C<-USER_INVALID> strings,
+this string will replace the sequence C<~R~> if it occurs.
+
 See C<example1> and the companion option C<-INVALID_HTML>.
 
 =item C<-TITLE> 
@@ -718,6 +770,25 @@ See C<example1> and the companion option C<-INVALID_HTML>.
 Required string (unless you use C<-HEADER>). This is used as the form's title
 and as a header on the form's page - unless you use the C<-HEADER> option (see
 above) in which case this option is ignored.
+
+=item C<-USER_INVALID>
+
+Optional string. If specified you I<must> set C<-LANGUAGE> to 'user' and if
+you are not writing English then you'll need to set C<-USER_REQUIRED> too.
+
+This string is used as the error text for invalid fields. If it contains the
+character sequence C<~I~> that sequence will be replaced with the HTML used to
+signify an invalid field (which you can override by setting C<-INVALID_HTML>).
+
+=item C<-USER_REQUIRED>
+
+Optional string. If specified you I<must> set C<-LANGUAGE> to 'user' and if
+you are not writing English then you'll need to set C<-USER_INVALID> too.
+
+This string is used as the error text for required fields. If it contains the
+character sequence C<~R~> that sequence will be replaced with the HTML used to
+signify a required field (which you can override by setting
+C<-REQUIRED_HTML>).
 
 =item C<-VALIDATE> 
 
@@ -1229,6 +1300,20 @@ C<example6> is a simple conversion of C<example2> so you can see the simple
 changes required. Of course you don't have to change your scripts at all if
 you run them under Apache::Registry.
 
+=head2 USING QUICKFORM WITH OBJECT MODULES
+
+If you want to pass QuickForm an C<on_valid_form> function that is in fact an
+object's method call then instead of:
+
+    -ACCEPT => \&on_valid_form,
+
+you need to write:
+
+    -ACCEPT => sub { $object->on_valid_form },
+
+assuming that you have an object reference called C<$object> and you want it
+to call its C<on_valid_form> method.
+
 =head2 INTRODUCTORY ARTICLE
 
 See http://www.perlpress.com/perl/quickform.html
@@ -1250,6 +1335,9 @@ If you get messages like this under pure mod_perl:
 the problem is with your configuration I<not> QuickForm, and I won't be able
 to help you. Please see the copious and high quality documentation at
 L<http://perl.apache.org> for help with this problem.
+
+If mod_perl prints things like "Content: text/html" at the top of your forms
+it's a mod_perl issue; check your PerlSendHeader setting (I have it Off).
 
 Some browsers get awfully confused about colouring rows and cells in tables,
 so if you have problems with this please check the HTML that QuickForm
