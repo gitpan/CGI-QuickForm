@@ -1,6 +1,6 @@
 package CGI::QuickForm ; # Documented at the __END__.
 
-# $Id: QuickForm.pm,v 1.12 1999/09/26 14:49:23 root Exp $
+# $Id: QuickForm.pm,v 1.15 1999/10/03 10:32:45 root Exp root $
 
 require 5.004 ;
 
@@ -10,18 +10,25 @@ use CGI qw( :standard :html3 ) ;
 #use CGI::Carp qw( fatalsToBrowser ) ;
 
 use vars qw( 
-            $VERSION @ISA @EXPORT 
+            $VERSION @ISA @EXPORT @EXPORT_OK
             $REQUIRED $INVALID
             %Translate 
             ) ;
 
-$VERSION = '1.40' ; 
+$VERSION   = '1.50' ; 
 
 use Exporter() ;
 
-@ISA    = qw( Exporter ) ;
+@ISA       = qw( Exporter ) ;
 
-@EXPORT = qw( show_form ) ;
+@EXPORT    = qw( show_form ) ;
+
+
+# &colour is not documented because at some point it may be moved elsewhere.
+@EXPORT_OK = qw( colour color ) ;
+*color = \&colour ;
+sub colour { qq{<FONT COLOR="$_[0]">$_[1]</FONT>} }
+
 
 my %Record ;
 
@@ -33,7 +40,7 @@ sub show_form {
         -HEADER      => undef,      
         -FOOTER      => undef,
         -ACCEPT      => \&_on_valid_form,
-        -VALIDATE    => undef,      # Call this to validate entire record
+        -VALIDATE    => undef,        # Call this to validate entire record
         -SIZE        => undef,
         -MAXLENGTH   => undef,
         -ROWS        => undef,
@@ -96,10 +103,13 @@ sub _check_form {
         my %field = %$fieldref ;
         # We have to write back to the original data, $fieldref only points to
         # a copy.
-        $Record{-FIELDS}[$i]{-INVALID} = 1, $Record{-INVALID}++
-        if ( $field{-REQUIRED} and not param( $field{-name} ) ) or
-           ( defined $field{-VALIDATE} and not
-             &{$field{-VALIDATE}}( param( $field{-name} ) ) ) ;
+        my( $valid, $why ) = defined $field{-VALIDATE} ?
+                                  &{$field{-VALIDATE}}( param( $field{-name} ) ) :
+                                  ( 1, '' ) ;
+        $Record{-FIELDS}[$i]{-INVALID} = 1, 
+        $Record{-FIELDS}[$i]{-WHY}     = $valid ? undef : $why, 
+        $Record{-INVALID}++
+        if ( $field{-REQUIRED} and not param( $field{-name} ) ) or not $valid ;
         $Field{$field{-name}} = param( $field{-name} ) ;
         $i++ ;
     }
@@ -107,7 +117,9 @@ sub _check_form {
     if( not $Record{-INVALID} and defined $Record{-VALIDATE} ) {
         # If all the individual parts are valid, check that the record as a
         # whole is valid. The parameters are presented in a name=>value hash.
-        $Record{-INVALID} = not &{$Record{-VALIDATE}}( %Field ) ;
+        my( $valid, $why ) = &{$Record{-VALIDATE}}( %Field ) ;
+        $Record{-INVALID}  = not $valid ;
+        $Record{-WHY}      = $why ;
     }
 
     if( $Record{-INVALID} ) {
@@ -128,6 +140,7 @@ sub _check_form {
 sub _show_form {
 
     my $invalid = delete $Record{-INVALID} ;
+    my $why     = delete $Record{-WHY} ;
 
     if( $Record{-HEADER} ) {
         print $Record{-HEADER} ;
@@ -143,6 +156,7 @@ sub _show_form {
 
     print $Translate{$Record{-LANGUAGE}}{-REQUIRED}   if $Record{-REQUIRED} ;
     print " $Translate{$Record{-LANGUAGE}}{-INVALID}" if $invalid ;
+    print "<BR>$why" if $invalid and defined $why ;
 
     print start_form, qq{<TABLE BORDER="0">} ;
 
@@ -154,11 +168,15 @@ sub _show_form {
         $required    = $required ? $REQUIRED : '' ;
         my $invalid  = delete $field{-INVALID} ;
         $invalid     = $invalid ? $INVALID : '' ;
+        my $why      = delete $field{-WHY} ;
         print "<TR><TD>$field{-LABEL}$required$invalid</TD><TD>" ;
         delete @field{-LABEL,-VALIDATE,-CLEAN,-SIZE,-MAXLENGTH,-ROWS,-COLUMNS} ;
         no strict "refs" ;
         local $^W = 0 ; # Switch off moans about undefined values.
         print &{$type}( %field ) ; 
+        # Prefer to say why immediately after the field rather than in a
+        # separate column.
+        print " $why" if $invalid and defined $why ;
         print "</TD></TR>" ;
     }
 
@@ -448,20 +466,44 @@ C<-HEADER> option (see above) in which case this option is ignored.
 
 C<-VALIDATE> Optional subroutine reference. This routine is called after each
 individual field has been validated. It is given the fields in a name=>value
-hash and must return true if the record as a whole is valid, false otherwise.
+hash. It should either return a simple true (valid) or false (invalid) or a
+two element list, the first element being a true/false value and the second
+value either an empty string or an (html) string which gives the reason why
+the record is invalid.
 Typically it may have this structure:
 
     sub valid_record {
         my %field = @_ ;
         my $valid = 1 ;
         # Do some multi-field validation, e.g.
-        # if( $field{'colour'} eq 'blue' and
-        #     $field{'make'} eq 'estate' ) {
-        #   $valid = 0 ; # No blue estates available.
-        # }
+        if( $field{'colour'} eq 'blue' and
+            $field{'make'} eq 'estate' ) {
+            $valid = 0 ; # No blue estates available.
+        }
         # etc.
         $valid ; # Return the valid variable which may now be false.
     }
+
+or now (preferred style):
+
+    sub valid_record {
+        my %field = @_ ;
+        my $valid = 1 ;
+        my $why   = '' ;
+        # Do some multi-field validation, e.g.
+        if( $field{'colour'} eq 'blue' and
+            $field{'make'} eq 'estate' ) {
+          $valid = 0 ; # No blue estates available.
+          $why   = '<B><I>No blue estates available</I></B>' ;
+        }
+        # etc.
+        ( $valid, $why ) ; 
+    }
+
+I<Both syntaxes work so no existing code need be changed.> If the record is
+invalid the C<$why> element will be shown near the top of the form just before
+the fields themselves, otherwise (i.e. if the record is valid) it will be
+ignored.
 
 C<-COLUMNS> Optional integer. If set then any C<-TYPE =E<gt> textarea> will
 have a C<-columns> set to this value unless an explicit C<-columns> is given.
@@ -546,7 +588,10 @@ by C<CGI.pm>.
 
 C<-VALIDATE> Optional subroutine reference. If specified this subroutine will
 be called when the user presses the submit button; its argument will be the
-value of the field; it must return true if the field is valid false otherwise.
+value of the field. It should either return a simple true (valid) or false
+(invalid) or a two element list, the first element being a true/false value
+and the second value either an empty string or an (html) string which gives
+the reason why the field is invalid.
 Its typical structure may be:
 
     sub valid_national_insurance {
@@ -555,6 +600,23 @@ Its typical structure may be:
         $ni = uc $ni ;
         ( $ni =~ /^[A-Z]{2}\d{7}[A-Z]$/o ) ? 1 : 0 ;
     }
+
+or now (preferred style):
+
+    sub valid_national_insurance {
+        my $ni  = shift ;
+        my $why = '<I>Should be 2 letters followed by 7 ' .
+                  'digits then a letter</I>' ;
+    
+        $ni = uc $ni ;
+        my $valid = ( $ni =~ /^[A-Z]{2}\d{7}[A-Z]$/o ) ? 1 : 0 ;
+
+        ( $valid, $why ) ; 
+    }
+
+I<Both syntaxes work so no existing code need be changed.> If the field is
+invalid the C<$why> element will be shown immediately to the right of the
+field it refers to, otherwise (i.e. if the field is valid) it will be ignored.
 
 =head2 CGI.pm field-level options
 
@@ -672,22 +734,26 @@ production-quality program: it has no error checking and is I<not> secure.
         my %rec   = @_ ;
         my $valid = 1 ;
         # We don't allow (perfectly valid!) names like 'John John'.
+        my $why   = 'Not allowed to have identical forename and surname' ;
         $valid    = 0 if lc $surname eq lc $forename ;
-        $valid ;
+        ( $valid, $why ) ; # $why is ignored if valid.
     }
 
     sub valid_name {
         my $name  = shift ;
         my $valid = 1 ;
         $valid    = 0 if $name !~ /^\w{2,}$/o ;
-        $valid ;
+        ( $valid, 'Name must have at least 2 letters' ) ; 
     }
 
     sub mk_valid_number {
         my( $min, $max ) = @_ ;
-        sub { $min <= $_[0] and $_[0] <= $max } ;
-    }
 
+        sub { 
+            my $valid = $_[0] ? ( $min <= $_[0] and $_[0] <= $max ) : 1 ;
+            ( $valid, "<I>Should be between $min and $max inclusive</I>" ) ; 
+        } ;
+    }
 
 =head1 BUGS
 

@@ -1,3 +1,11 @@
+1999/10/03
+
+If the user enters invalid data we flagged it with * but that was it. Now you
+can add a textual explanation of why the data is invalid and this will appear
+to the right of any invalid fields. This is achieved by returning a two
+element array from your validation routines. (Existing code will work fine so
+no need to change anything.) See the pod for examples.
+
 1999/09/26
 
 Bug fixes on the -CLEAN option; documentation corrections, e.g. to the
