@@ -169,9 +169,11 @@ before the form proper. If you use this it must include everything from
         -HEADER => $header,
         # etc
 
-C<-LANGUAGE> Optional string. This option only has one valid setting,
-'en' (english). If people provide me with translations I will add other
-languages. This is used for the presentation of messages to the user, e.g.:
+C<-LANGUAGE> Optional string. This option accepts 'en' (english), 'de'
+(german) and 'fr' (french) - the translations were done by Babelfish.
+('english' is also supported for backward compatibility.) If people provide me
+with translations I will add other languages. This is used for the
+presentation of messages to the user, e.g.:
 
     Please enter the information.
     Fields marked with + are required.
@@ -404,28 +406,6 @@ production-quality program: it has no error checking and is I<not> secure.
 =head1 BUGS
 
 None that have come to light (yet).
-
-=head1 CHANGES
-
-1999/08/24  Created. Thanks to Paul Johnston for the idea. 
-
-1999/08/28  Version 1.00.
-
-1999/09/01  Corrected Makefile.PL plus minor improvements to the code and
-            documentation.
-
-1999/09/15  Now use language of 'en' for english (although 'english' is
-            supported for backward compatibility). 
-
-1999/09/16  Corrected some documentation errors. Added some new options so
-            that you can default the size of every textfield and textarea (but
-            still override the defaults individually of course), see the -SIZE,
-            -MAXLENGTH, -ROWS and -COLUMNS options. 
-            INCOMPATIBLE CHANGE: Instead of calling QuickForm::run, you now
-            call show_form. (This is because of a mistake made in earlier
-            versions regarding QuickForm's package which has now been
-            corrected. Sorry for this inconvenience.)
-
 
 =head1 AUTHOR
 

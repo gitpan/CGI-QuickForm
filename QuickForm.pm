@@ -1,6 +1,6 @@
 package CGI::QuickForm ; # Documented at the __END__.
 
-# $Id: QuickForm.pm,v 1.6 1999/09/16 19:06:02 root Exp root $
+# $Id: QuickForm.pm,v 1.8 1999/09/19 19:50:15 root Exp root $
 
 require 5.004 ;
 
@@ -12,10 +12,10 @@ use CGI qw( :standard :html3 ) ;
 use vars qw( 
             $VERSION @ISA @EXPORT 
             $REQUIRED $INVALID
-            %String 
+            %Translate 
             ) ;
 
-$VERSION = '1.10' ; 
+$VERSION = '1.20' ; 
 
 use Exporter() ;
 
@@ -130,12 +130,12 @@ sub _show_form {
             header,
             start_html( $Record{-TITLE} ),
             h3( $Record{-TITLE} ),
-            p( $String{$Record{-LANGUAGE}}{-INTRO} ),
+            p( $Translate{$Record{-LANGUAGE}}{-INTRO} ),
             ;
     }
 
-    print $String{$Record{-LANGUAGE}}{-REQUIRED}   if $Record{-REQUIRED} ;
-    print " $String{$Record{-LANGUAGE}}{-INVALID}" if $invalid ;
+    print $Translate{$Record{-LANGUAGE}}{-REQUIRED}   if $Record{-REQUIRED} ;
+    print " $Translate{$Record{-LANGUAGE}}{-INVALID}" if $invalid ;
 
     print start_form, qq{<TABLE BORDER="0">} ;
 
@@ -186,12 +186,28 @@ BEGIN {
     $REQUIRED = '<B><FONT COLOR="BLUE">+</FONT></B>' ;
     $INVALID  = '<B><FONT COLOR="RED">*</FONT></B>' ;
 
-    %String = (
-        'en' => {
+    %Translate = (
+        'de' => {
+            -INTRO    => "Tragen Sie bitte die Informationen ein.",
+            -REQUIRED => "Die Dateneingabe Felder, die mit $REQUIRED " .
+                         "gekennzeichnet werden, werden angefordert.",
+            -INVALID  => "Die Dateneingabe Felder, die mit gekennzeichnet " .
+                         "werden $INVALID enthalten Sie Fehler oder seien " .
+                         "Sie leer.",
+            },
+         'en' => {
             -INTRO    => "Please enter the information.",
-            -REQUIRED => "Fields marked with $REQUIRED are required.",
-            -INVALID  => "Fields marked with $INVALID contain errors " .
+            -REQUIRED => "Data entry fields marked with $REQUIRED are required.",
+            -INVALID  => "Data entry fields marked with $INVALID contain errors " .
                          "or are empty.",
+            },
+         'fr' => {
+            -INTRO    => "Veuillez &eacute;crire l'information.",
+            -REQUIRED => "Des zones de saisie de donn&eacute;es " .
+                         "identifi&eacute;es par " .
+                         "$REQUIRED sont exig&eacute;es.",
+            -INVALID  => "Des zones de saisie de données identifi&eacute;es par " .
+                         "$INVALID contenez les erreurs ou soyez vide.",
             },
         ) ;
 }
@@ -373,9 +389,11 @@ before the form proper. If you use this it must include everything from
         -HEADER => $header,
         # etc
 
-C<-LANGUAGE> Optional string. This option only has one valid setting,
-'en' (english). If people provide me with translations I will add other
-languages. This is used for the presentation of messages to the user, e.g.:
+C<-LANGUAGE> Optional string. This option accepts 'en' (english), 'de'
+(german) and 'fr' (french) - the translations were done by Babelfish.
+('english' is also supported for backward compatibility.) If people provide me
+with translations I will add other languages. This is used for the
+presentation of messages to the user, e.g.:
 
     Please enter the information.
     Fields marked with + are required.
@@ -608,28 +626,6 @@ production-quality program: it has no error checking and is I<not> secure.
 =head1 BUGS
 
 None that have come to light (yet).
-
-=head1 CHANGES
-
-1999/08/24  Created. Thanks to Paul Johnston for the idea. 
-
-1999/08/28  Version 1.00.
-
-1999/09/01  Corrected Makefile.PL plus minor improvements to the code and
-            documentation.
-
-1999/09/15  Now use language of 'en' for english (although 'english' is
-            supported for backward compatibility). 
-
-1999/09/16  Corrected some documentation errors. Added some new options so
-            that you can default the size of every textfield and textarea (but
-            still override the defaults individually of course), see the -SIZE,
-            -MAXLENGTH, -ROWS and -COLUMNS options. 
-            INCOMPATIBLE CHANGE: Instead of calling QuickForm::run, you now
-            call show_form. (This is because of a mistake made in earlier
-            versions regarding QuickForm's package which has now been
-            corrected. Sorry for this inconvenience.)
-
 
 =head1 AUTHOR
 

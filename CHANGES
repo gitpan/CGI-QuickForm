@@ -1,0 +1,36 @@
+1999/09/17
+
+Added -LANGUAGE options 'fr' (french) and 'de' (german) - translation was by
+Babelfish so it they're wrong please let me know!
+
+1999/09/16  
+
+Corrected some documentation errors. Added some new options so that you can
+default the size of every textfield and textarea (but still override the
+defaults individually of course), see the -SIZE, -MAXLENGTH, -ROWS and
+-COLUMNS options. 
+
+INCOMPATIBLE CHANGE 
+
+Instead of calling QuickForm::run, you now call show_form. (This is because of
+a mistake made in earlier versions regarding QuickForm's package which has now
+been corrected. Sorry for this inconvenience.)
+
+1999/09/15  
+
+Now use language of 'en' for english (although 'english' is supported for
+backward compatibility). 
+
+1999/09/01  
+
+Corrected Makefile.PL plus minor improvements to the code and documentation.
+
+1999/08/28  
+
+Version 1.00.
+
+1999/08/24  
+
+Created. Thanks to Paul Johnston for the idea. 
+
+
